@@ -46,6 +46,24 @@ nav.pill{
 }
 .brand-mark{ font-weight:800; font-size:18px; letter-spacing:0.02em; }
 .nav-tag{ font-size:13px; font-weight:600; color:var(--ink-soft); }
+.nav-toggle{display:flex;align-items:center;justify-content:center;width:38px;height:38px;background:none;border:none;cursor:pointer;flex-direction:column;gap:5px;}
+.nav-toggle span{width:18px;height:2px;background:var(--ink);display:block;border-radius:2px;}
+.nav-right{display:flex;align-items:center;gap:18px;}
+nav.pill .nav-links{display:flex;gap:24px;list-style:none;}
+nav.pill .nav-links a{font-size:14px;font-weight:500;color:var(--ink);transition:color .2s;}
+nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
+.nav-cta{border:1px solid var(--ink);border-radius:var(--radius-pill);padding:9px 18px;font-size:13px;font-weight:600;white-space:nowrap;display:inline-block;}
+.mobile-menu{position:fixed;top:0;left:0;height:100%;width:min(340px,86vw);background:var(--bg-pill);z-index:1100;transform:translateX(-100%);transition:transform .3s;padding:28px;display:flex;flex-direction:column;box-shadow:4px 0 24px rgba(0,0,0,.08);overflow-y:auto;}
+.mobile-menu.open{transform:translateX(0);}
+.mobile-menu .close-menu{align-self:flex-end;background:none;border:none;font-size:28px;cursor:pointer;color:var(--ink);line-height:1;margin-bottom:20px;}
+.mobile-menu ul{list-style:none;display:flex;flex-direction:column;}
+.mobile-menu ul li{border-bottom:1px solid var(--line);}
+.mobile-menu ul li a{display:block;padding:18px 4px;font-size:19px;font-weight:600;color:var(--ink);}
+.mobile-menu .menu-media{margin-top:28px;display:flex;align-items:center;justify-content:center;}
+.mobile-menu .menu-media img{width:100%;max-width:140px;height:auto;object-fit:contain;}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:1050;opacity:0;pointer-events:none;transition:opacity .3s;}
+.scrim.show{opacity:1;pointer-events:auto;}
+@media(max-width:860px){nav.pill .nav-links{display:none;}}
 
 /* ---- page head ---- */
 .page-head{ padding: 40px 0 8px; }
@@ -179,6 +197,7 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
     @page{ size:A4; margin:0; }
     body{ background:#fff; padding:0; }
     .app{ display:none !important; }
+    .scrim, .mobile-menu{ display:none !important; }
     #invoiceSheet{ display:block !important; }
 }
 </style>
@@ -186,11 +205,28 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
 <body>
 
 <!-- ===================== APP (calculator UI) ===================== -->
+<div class="scrim" id="scrim"></div>
+<div class="mobile-menu" id="mobileMenu">
+    <button class="close-menu" id="closeMenu" aria-label="Close menu">&times;</button>
+    <ul>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="database.html">Database</a></li>
+        <li><a href="FOM_Studios_Price_Calculator.html">Price Calculator</a></li>
+    </ul>
+    <div class="menu-media"><img src="assets/mascot.png" alt="FOM Studios mascot"></div>
+</div>
 <div class="app">
 <div class="nav-shell">
     <nav class="pill">
-        <span class="brand-mark">FOM STUDIOS</span>
-        <span class="nav-tag">Internal Price Calculator</span>
+        <button class="nav-toggle" id="navToggle" aria-label="Open menu"><span></span><span></span></button>
+        <a href="dashboard.html" class="brand-mark">FOM STUDIOS</a>
+        <div class="nav-right">
+            <ul class="nav-links">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="database.html">Database</a></li>
+                <li><a href="FOM_Studios_Price_Calculator.html" class="active">Calculator</a></li>
+            </ul>
+        </div>
     </nav>
 </div>
 
@@ -784,6 +820,14 @@ $('exportBtn').addEventListener('click', () => { buildInvoice(); window.print();
     if(it < CONFIG.packagePrice[t][tier]){ ok=false; console.warn(`[check] ${t} ${tier} itemised<price`); }
   }
   console.log(ok ? "FOM calculator: package breakdowns OK ✓" : "FOM calculator: review above");
+})();
+
+/* ---- hamburger menu ---- */
+(function(){
+  const mm=$('mobileMenu'), sc=$('scrim');
+  $('navToggle').onclick=()=>{mm.classList.add('open');sc.classList.add('show');};
+  $('closeMenu').onclick=()=>{mm.classList.remove('open');sc.classList.remove('show');};
+  sc.onclick=()=>{mm.classList.remove('open');sc.classList.remove('show');};
 })();
 
 /* ---- init ---- */
