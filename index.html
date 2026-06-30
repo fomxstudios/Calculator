@@ -123,11 +123,13 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
    ========================================================= */
 #invoiceSheet{ display:none; }
 .inv-sheet{
-    width: 210mm; height: 297mm; margin:0 auto; background:#fff; color:var(--ink);
+    width: 210mm; min-height: 297mm; margin:0 auto; background:#fff; color:var(--ink);
     padding: 14mm 15mm 12mm; font-size: 12px; display:flex; flex-direction:column;
-    overflow:hidden;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
 }
+/* keep rows and key blocks from being split across a page break */
+.is-table tr{ break-inside: avoid; }
+.is-totals, .is-due, .is-notes, .is-foot{ break-inside: avoid; }
 .is-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:20px; padding-bottom:16px; }
 .is-logo img{ max-width: 230px; max-height: 150px; object-fit:contain; }
 .is-logo .logo-fallback{ font-weight:800; font-size:34px; letter-spacing:0.02em; line-height:1; }
@@ -209,6 +211,8 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
                     <option value="combo">Photography &amp; Videography</option>
                     <option value="photo">Photography</option>
                     <option value="video">Videography</option>
+                    <option value="padel">Padel League (per week)</option>
+                    <option value="mini">Mini Shoot</option>
                     <option value="custom">Custom build (from scratch)</option>
                 </select>
             </div>
@@ -225,6 +229,13 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
                     <label for="pkgQty">Quantity / sessions</label>
                     <input type="number" id="pkgQty" value="1" min="1" step="1">
                 </div>
+            </div>
+            <div class="field" id="miniField" style="display:none;">
+                <label for="miniMode">Mini shoot — discipline</label>
+                <select id="miniMode">
+                    <option value="photographer">Photographer (edited photos)</option>
+                    <option value="videographer">Videographer (30-60s reel)</option>
+                </select>
             </div>
 
             <h2 class="mt">Add extra items</h2>
@@ -393,6 +404,9 @@ const CONFIG = {
     combo: { Bronze: 1500, Silver: 2700, Gold: 4500 },   // Photography & Videography
   },
 
+  /* 1b) SPECIAL PACKAGES — flat discounted prices (no Bronze/Silver/Gold) */
+  specialPrice: { padel: 2500, mini: 500 },   // Padel = per week, Mini = per shoot
+
   /* 2) COVERAGE — charged per hour, per person */
   hourly: { photographer: 400, videographer: 500 },
 
@@ -438,7 +452,10 @@ const MASCOT = {
   Gold:   "assets/mascot-head-gold.jpg",
   color:  "assets/mascot-head-color.png",
 };
-const TYPE_LABEL = { photo:"Photography", video:"Videography", combo:"Photography & Videography", custom:"Custom build" };
+const TYPE_LABEL = { photo:"Photography", video:"Videography", combo:"Photography & Videography", padel:"Padel League Package", mini:"Mini Shoot", custom:"Custom build" };
+const TIERED = ['photo','video','combo'];
+const SPECIAL = ['padel','mini'];
+const pkgPrice = (type, tier) => SPECIAL.includes(type) ? CONFIG.specialPrice[type] : CONFIG.packagePrice[type][tier];
 
 /* money: South African format e.g. R45 000,00 */
 function RZA(n){
@@ -483,6 +500,21 @@ function packageLines(type, tier){
     lines.push(L("Reel revisions", C.revision, tier === 'Gold' ? 3 : 2));
     lines.push(L("Studio overhead (photo + video)", C.overhead, 2));
     if(freeHrs) lines.push(L(`${freeHrs} free hour ea. (Gold)`, -(C.hourly.photographer + C.hourly.videographer), freeHrs));
+  } else if(type === 'padel'){
+    lines.push(L("Videographer — 6 hr game day", C.hourly.videographer, 6));
+    lines.push(L("Photographer — 6 hr game day", C.hourly.photographer, 6));
+    lines.push(L("2-3min Game Day Reel", d["2-3min Reel"], 1));
+    lines.push(L("Edited Photos (per week)", d["40-50 Photos"], 1));
+    lines.push(L("Studio overhead (photo + video)", C.overhead, 2));
+  } else if(type === 'mini'){
+    if(state.miniMode === 'videographer'){
+      lines.push(L("Videographer — 30 min coverage", C.hourly.videographer, 0.5));
+      lines.push(L("30-60s Reel", d["30-60s Reel"], 1));
+    } else {
+      lines.push(L("Photographer — 30 min coverage", C.hourly.photographer, 0.5));
+      lines.push(L("Edited Photos", d["Single Photo"] * 20, 1));   // priced for 20, amount not labelled
+    }
+    lines.push(L("Studio overhead", C.overhead, 1));
   }
   return lines;
 }
@@ -505,10 +537,22 @@ const CONTENT_TEXT = {
     Gold:["1 Photographer","1 Videographer","1 (2-3) Minute Reel","1 (30-60) Second Reel","50-60 Edited Photos","Drone Coverage","3 rounds of revisions on the reel","4 Hour Coverage"],
   },
 };
+const SPECIAL_CONTENT = {
+  padel:["1 Videographer","1 Photographer","6 Hour Game Day Coverage","1 (2-3) Minute Game Day Reel Per Week","Professionally Edited Photos Per Week"],
+};
+const MINI_CONTENT = {
+  photographer:["Photography (Edited Photos)","30 Minute Coverage"],
+  videographer:["Videography (1 × 30-60 Second Reel)","30 Minute Coverage"],
+};
+function contentText(type, tier){
+  if(type === 'mini') return MINI_CONTENT[state.miniMode];
+  if(SPECIAL.includes(type)) return SPECIAL_CONTENT[type];
+  return CONTENT_TEXT[type][tier];
+}
 
 /* ---- state ---- */
 let state = {
-  type:'combo', tier:'Bronze', basis:'deliverable', pkgQty:1,
+  type:'combo', tier:'Bronze', basis:'deliverable', pkgQty:1, miniMode:'photographer',
   extras:[], custom:[],
   transport:{on:false, km:0}, overtime:{on:false, hours:0},
 };
@@ -550,12 +594,16 @@ function overtimeLine(){ return L(`Overtime (${CONFIG.overtimeMultiplier}× rate
 /* ---- render the live (dark) invoice ---- */
 function render(){
   const isCustom = state.type === 'custom';
-  document.getElementById('tierField').style.display = isCustom ? 'none' : 'block';
+  const isTiered = TIERED.includes(state.type);
+  document.getElementById('tierField').style.display = isTiered ? 'block' : 'none';
   document.getElementById('pkgQtyField').style.display = isCustom ? 'none' : 'block';
+  document.getElementById('miniField').style.display = (state.type === 'mini') ? 'block' : 'none';
   document.getElementById('customHint').style.display = isCustom ? 'block' : 'none';
   document.getElementById('ivMascot').src = "assets/mascot.png";
   document.getElementById('ivTitle').textContent = TYPE_LABEL[state.type];
-  document.getElementById('ivSub').textContent = isCustom ? 'Custom quote' : (state.tier + ' package' + (state.pkgQty>1 ? ` × ${state.pkgQty}` : ''));
+  const qtyTxt = state.pkgQty>1 ? ` × ${state.pkgQty}` : '';
+  document.getElementById('ivSub').textContent =
+    isCustom ? 'Custom quote' : (isTiered ? state.tier + ' package' + qtyTxt : 'Package' + qtyTxt);
 
   const body = document.getElementById('ivBody');
   body.innerHTML = '';
@@ -569,7 +617,7 @@ function render(){
     const base = packageLines(state.type, state.tier);
     let itemized = 0;
     base.forEach(ln => { itemized += ln.unit*ln.qty; body.appendChild(rowEl(ln,null,false)); });
-    const price = CONFIG.packagePrice[state.type][state.tier];
+    const price = pkgPrice(state.type, state.tier);
     const saving = itemized - price;
     body.appendChild(simpleRow('Itemised value', itemized, 'subtotal'));
     if(saving > 0) body.appendChild(simpleRow('Bundle saving (client pays package price)', -saving, 'saving'));
@@ -624,8 +672,11 @@ function invoiceItems(){
   if(state.type === 'custom'){
     state.custom.forEach(ln => items.push(ln));
   } else {
-    const price = CONFIG.packagePrice[state.type][state.tier];
-    items.push(L(`${state.tier} Package — ${TYPE_LABEL[state.type]}`, price, state.pkgQty));
+    const price = pkgPrice(state.type, state.tier);
+    const label = TIERED.includes(state.type)
+      ? `${state.tier} Package — ${TYPE_LABEL[state.type]}`
+      : TYPE_LABEL[state.type];
+    items.push(L(label, price, state.pkgQty));
     state.extras.forEach(ln => items.push(ln));
   }
   if(state.transport.on) items.push(transportLine());
@@ -649,8 +700,8 @@ function buildInvoice(){
   const body = document.getElementById('psBody');
   body.innerHTML = '';
   let total = 0;
-  // pad to a tidy minimum number of rows like the template
-  const minRows = 8;
+  // pad to a tidy number of rows, but shrink the padding as items grow
+  const minRows = Math.max(items.length, 6);
   items.forEach(ln => {
     const amt = ln.unit*ln.qty; total += amt;
     const tr = document.createElement('tr');
@@ -670,8 +721,9 @@ function buildInvoice(){
   const notes = document.getElementById('psNotes');
   notes.innerHTML = '';
   if(state.type !== 'custom'){
-    const list = CONTENT_TEXT[state.type][state.tier].join('\n');
-    notes.appendChild(noteRow(`${state.tier} Package:`, list));
+    const list = contentText(state.type, state.tier).join('\n');
+    const head = TIERED.includes(state.type) ? `${state.tier} Package:` : `${TYPE_LABEL[state.type]}:`;
+    notes.appendChild(noteRow(head, list));
   }
   const extra = document.getElementById('invnotes').value.trim();
   if(extra) notes.appendChild(noteRow('Note:', extra));
@@ -688,6 +740,7 @@ function noteRow(k, v){
 const $ = id => document.getElementById(id);
 $('qtype').addEventListener('change', e => { state.type = e.target.value; render(); });
 $('tier').addEventListener('change', e => { state.tier = e.target.value; render(); });
+$('miniMode').addEventListener('change', e => { state.miniMode = e.target.value; render(); });
 $('pkgQty').addEventListener('input', e => { state.pkgQty = Math.max(1, parseInt(e.target.value)||1); render(); });
 $('basis').addEventListener('change', e => { state.basis = e.target.value; });
 $('addExtra').addEventListener('click', () => {
