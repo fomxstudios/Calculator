@@ -281,13 +281,19 @@ $('closeMenu').onclick=()=>{mm.classList.remove('open');sc.classList.remove('sho
 sc.onclick=()=>{mm.classList.remove('open');sc.classList.remove('show');};
 
 /* ===== init: cloud (live) or local ===== */
+const tsMillis = t => (t && typeof t.toMillis==='function') ? t.toMillis() : 0;
+function safeRender(){ try{ render(); }catch(e){ console.error('render error',e); } }
+function showConnError(){
+  const badge=$('syncBadge'); badge.textContent='⚠ Offline'; badge.className='badge local';
+  $('content').innerHTML='<div class="card" style="text-align:center;padding:40px;">Couldn’t reach the cloud database. Check your connection, then <a href="#" onclick="location.reload();return false;" style="color:var(--accent);font-weight:700;">refresh</a>.</div>';
+}
 function startLocal(){
   $('loginGate').style.display='none';
   const badge=$('syncBadge'); badge.textContent='💾 Local only'; badge.className='badge local';
   $('logoutBtn').style.display='none';
   try{ orders=JSON.parse(localStorage.getItem('fom_orders'))||[]; }catch(e){ orders=[]; }
-  render();
-  window.addEventListener('storage',e=>{ if(e.key==='fom_orders'){ try{orders=JSON.parse(e.newValue)||[];}catch(x){orders=[];} render(); } });
+  safeRender();
+  window.addEventListener('storage',e=>{ if(e.key==='fom_orders'){ try{orders=JSON.parse(e.newValue)||[];}catch(x){orders=[];} safeRender(); } });
 }
 function initCloud(){
   firebase.initializeApp(firebaseConfig);
@@ -303,15 +309,14 @@ function initCloud(){
   $('lgPass').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
   auth.onAuthStateChanged(u=>{
     if(u){ $('loginGate').style.display='none';
-      db.collection('orders').orderBy('createdAt').onSnapshot(snap=>{ orders=snap.docs.map(d=>({id:d.id,...d.data()})); render(); }, err=>console.warn('Firestore:',err));
-    } else { $('loginGate').style.display='flex'; orders=[]; render(); }
+      db.collection('orders').onSnapshot(snap=>{ orders=snap.docs.map(d=>({id:d.id,...d.data()})); orders.sort((a,b)=>tsMillis(a.createdAt)-tsMillis(b.createdAt)); safeRender(); }, err=>console.warn('Firestore:',err));
+    } else { orders=[]; safeRender(); $('loginGate').style.display='flex'; }
   });
 }
 if(!configured){
   startLocal();
 } else {
-  $('loginGate').style.display='flex';
-  loadFirebase().then(initCloud).catch(()=>{ console.warn('Firebase failed to load — using local mode'); startLocal(); });
+  loadFirebase().then(initCloud).catch(showConnError);
 }
 </script>
 </body>
