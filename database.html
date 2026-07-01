@@ -315,7 +315,7 @@ function showConnError(){
 /* one-time offer to move pre-cloud local orders into Firestore */
 function offerImport(db){
   let local=[]; try{ local=JSON.parse(localStorage.getItem('fom_orders'))||[]; }catch(e){}
-  if(!local.length || $('impBar')) return;
+  if(!local.length || orders.length>0 || $('impBar')) return;   // skip if the cloud already has orders (avoids duplicates)
   const bar=document.createElement('div'); bar.id='impBar';
   bar.style.cssText='background:#eaf1fb;border:1px solid #bcd4f5;color:var(--accent);border-radius:14px;padding:12px 16px;margin-bottom:14px;font-size:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;';
   bar.innerHTML='<span>You have <b>'+local.length+'</b> order(s) saved on this device from before cloud sync.</span>'+
@@ -332,7 +332,7 @@ function initCloud(){
   firebase.initializeApp(firebaseConfig);
   auth=firebase.auth();
   const db=firebase.firestore();
-  db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+  db.settings({ experimentalAutoDetectLongPolling: true });  // works through VPNs/blockers; no stale cache
   store=cloudStore(db);
   const badge=$('syncBadge'); badge.textContent='☁ Cloud sync'; badge.className='badge cloud';
   $('logoutBtn').style.display='inline-block';
@@ -342,7 +342,7 @@ function initCloud(){
   $('lgBtn').onclick=login;
   $('lgPass').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
   auth.onAuthStateChanged(u=>{
-    if(u){ $('loginGate').style.display='none'; store.start(); offerImport(db); }
+    if(u){ $('loginGate').style.display='none'; store.start(); setTimeout(()=>offerImport(db),1800); }
     else { orders=[]; safeRender(); $('loginGate').style.display='flex'; }
   });
 }
