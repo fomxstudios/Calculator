@@ -177,9 +177,7 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 
 <div class="mascot-corner"><img src="assets/mascot.png" alt="" onerror="this.parentElement.style.display='none'"></div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Firebase config only (the SDK is loaded on demand, and only when configured) -->
 <script src="firebase-config.js"></script>
 <script>
 const RZA = n => 'R' + (Math.round(+n||0)).toLocaleString('en-ZA');
@@ -194,8 +192,12 @@ const fmtDate = d => { const dt=new Date(d); return dt.getDate()+' '+MONTHS[dt.g
 const esc = s => String(s==null?'':s).replace(/</g,'&lt;');
 const colorFor = (label,map,i)=> map[label] || PALETTE[i % PALETTE.length];
 
-const CLOUD = (typeof firebaseConfig!=='undefined') && firebaseConfig &&
-              !String(firebaseConfig.apiKey||'').startsWith('PASTE') && (typeof firebase!=='undefined');
+const configured = (typeof firebaseConfig!=='undefined') && firebaseConfig &&
+              !String(firebaseConfig.apiKey||'').startsWith('PASTE');
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+async function loadFirebase(){ const b='https://www.gstatic.com/firebasejs/10.12.0/';
+  await loadScript(b+'firebase-app-compat.js');
+  await Promise.all([loadScript(b+'firebase-auth-compat.js'), loadScript(b+'firebase-firestore-compat.js')]); }
 let orders = [], auth = null;
 
 function donutSVG(segs, size=190, stroke=30){
@@ -279,7 +281,15 @@ $('closeMenu').onclick=()=>{mm.classList.remove('open');sc.classList.remove('sho
 sc.onclick=()=>{mm.classList.remove('open');sc.classList.remove('show');};
 
 /* ===== init: cloud (live) or local ===== */
-if(CLOUD){
+function startLocal(){
+  $('loginGate').style.display='none';
+  const badge=$('syncBadge'); badge.textContent='💾 Local only'; badge.className='badge local';
+  $('logoutBtn').style.display='none';
+  try{ orders=JSON.parse(localStorage.getItem('fom_orders'))||[]; }catch(e){ orders=[]; }
+  render();
+  window.addEventListener('storage',e=>{ if(e.key==='fom_orders'){ try{orders=JSON.parse(e.newValue)||[];}catch(x){orders=[];} render(); } });
+}
+function initCloud(){
   firebase.initializeApp(firebaseConfig);
   auth=firebase.auth();
   const db=firebase.firestore();
@@ -296,11 +306,12 @@ if(CLOUD){
       db.collection('orders').orderBy('createdAt').onSnapshot(snap=>{ orders=snap.docs.map(d=>({id:d.id,...d.data()})); render(); }, err=>console.warn('Firestore:',err));
     } else { $('loginGate').style.display='flex'; orders=[]; render(); }
   });
+}
+if(!configured){
+  startLocal();
 } else {
-  $('loginGate').style.display='none';
-  try{ orders=JSON.parse(localStorage.getItem('fom_orders'))||[]; }catch(e){ orders=[]; }
-  render();
-  window.addEventListener('storage',e=>{ if(e.key==='fom_orders'){ try{orders=JSON.parse(e.newValue)||[];}catch(x){orders=[];} render(); } });
+  $('loginGate').style.display='flex';
+  loadFirebase().then(initCloud).catch(()=>{ console.warn('Firebase failed to load — using local mode'); startLocal(); });
 }
 </script>
 </body>
