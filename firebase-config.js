@@ -13,10 +13,10 @@
    cloud sync + login automatically.
    ===================================================================== */
 var firebaseConfig = {
-  apiKey:            "PASTE_API_KEY_HERE",
-  authDomain:        "PASTE_PROJECT.firebaseapp.com",
-  projectId:         "PASTE_PROJECT_ID",
-  storageBucket:     "PASTE_PROJECT.appspot.com",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId:             "PASTE_APP_ID"
+  apiKey:            "AIzaSyCbRXQmIxzVWuFS0CRmDY33qYuzpcVL80A",
+  authDomain:        "fom-studios.firebaseapp.com",
+  projectId:         "fom-studios",
+  storageBucket:     "fom-studios.firebasestorage.app",
+  messagingSenderId: "1049126528829",
+  appId:             "1:1049126528829:web:8ed0ea930e0b1579630754"
 };
