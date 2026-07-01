@@ -13,7 +13,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:60px;}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:60px;overflow-x:hidden;}
 img{display:block;max-width:100%;}
 a{color:inherit;text-decoration:none;}
 button{font-family:inherit;}
@@ -30,7 +30,6 @@ nav.pill{pointer-events:auto;max-width:var(--container);margin:0 auto;background
 nav.pill .nav-links{display:flex;gap:24px;list-style:none;}
 nav.pill .nav-links a{font-size:14px;font-weight:500;color:var(--ink);transition:color .2s;}
 nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
-.nav-cta{border:1px solid var(--ink);border-radius:var(--radius-pill);padding:9px 18px;font-size:13px;font-weight:600;white-space:nowrap;}
 .mobile-menu{position:fixed;top:0;left:0;height:100%;width:min(340px,86vw);background:var(--bg-pill);z-index:1100;transform:translateX(-100%);transition:transform .3s;padding:28px;display:flex;flex-direction:column;box-shadow:4px 0 24px rgba(0,0,0,.08);overflow-y:auto;}
 .mobile-menu.open{transform:translateX(0);}
 .mobile-menu .close-menu{align-self:flex-end;background:none;border:none;font-size:28px;cursor:pointer;color:var(--ink);line-height:1;margin-bottom:20px;}
@@ -42,16 +41,31 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:1050;opacity:0;pointer-events:none;transition:opacity .3s;}
 .scrim.show{opacity:1;pointer-events:auto;}
 
+/* login gate */
+.login-gate{position:fixed;inset:0;background:var(--bg);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:var(--bg-pill);border:1px solid var(--line);border-radius:var(--radius-card);padding:34px 30px;max-width:370px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.1);}
+.login-card .brand-mark{font-size:22px;display:block;margin-bottom:4px;}
+.login-card .lg-sub{color:var(--ink-soft);font-size:13px;margin-bottom:22px;}
+.login-card input{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;font-family:inherit;margin-bottom:12px;background:#fff;color:var(--ink);}
+.login-card input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.lg-err{color:#c0392b;font-size:13px;margin-top:8px;min-height:16px;}
+.btn.block{width:100%;padding:13px;}
+
 /* page */
 .page{padding-top:108px;}
 .dash-head{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:24px;}
 .dash-head .logo img{max-height:64px;width:auto;}
 .dash-head h1{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-.01em;}
 .dash-head p{color:var(--ink-soft);font-size:14px;margin-top:2px;}
+.head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .btn{border:1px solid var(--accent);background:var(--accent);color:var(--ink-on-dark);border-radius:var(--radius-pill);padding:11px 20px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;white-space:nowrap;}
 .btn:hover{background:var(--accent-hover);}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--ink);}
+.btn.ghost:hover{background:var(--ink);color:var(--bg-pill);}
+.badge{font-size:12px;font-weight:600;border-radius:var(--radius-pill);padding:8px 14px;border:1px solid var(--line);}
+.badge.cloud{background:#e7f0ff;border-color:#bcd4f5;color:var(--accent);}
+.badge.local{background:#f3f1ea;color:var(--ink-soft);}
 
-/* KPI cards */
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;}
 .vchart{display:flex;align-items:flex-end;gap:14px;height:200px;overflow-x:auto;padding-top:6px;-webkit-overflow-scrolling:touch;}
 .vbar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;flex:1 0 44px;min-width:44px;}
@@ -65,7 +79,6 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 .kpi.accent{background:var(--bg-dark);color:var(--ink-on-dark);border-color:var(--bg-dark);}
 .kpi.accent .k-lbl{color:var(--accent-on-dark);}
 
-/* chart grid */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
 .card{background:var(--bg-pill);border:1px solid var(--line);border-radius:var(--radius-card);padding:22px;}
 .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:700;margin-bottom:16px;}
@@ -80,27 +93,21 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 .bar-track{background:#e9e7e1;border-radius:var(--radius-pill);height:14px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:var(--radius-pill);background:var(--accent);}
 .bar-row .bv{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink-soft);}
-
-/* collection progress */
 .collect{display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
 .collect .prog{flex:1;min-width:200px;}
 .prog-track{background:#e9e7e1;border-radius:var(--radius-pill);height:22px;overflow:hidden;}
 .prog-fill{height:100%;background:var(--accent);border-radius:var(--radius-pill);display:flex;align-items:center;justify-content:flex-end;color:#fff;font-size:12px;font-weight:700;padding-right:10px;}
 .collect .legend2{font-size:13px;color:var(--ink-soft);}
 .collect .legend2 b{color:var(--ink);font-size:16px;}
-
-/* recent table */
-.recent table{width:100%;border-collapse:collapse;font-size:14px;}
+.recent-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.recent table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px;}
 .recent th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);font-weight:600;padding:8px 8px;border-bottom:1px solid var(--line);}
 .recent td{padding:9px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;}
 .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--radius-pill);color:#fff;}
-
-/* empty state */
 .empty-card{text-align:center;padding:50px 20px;}
 .empty-card img{max-width:150px;margin:0 auto 16px;}
 .empty-card h3{font-size:20px;font-weight:800;margin-bottom:6px;}
 .empty-card p{color:var(--ink-soft);margin-bottom:18px;}
-
 .mascot-corner{position:fixed;right:18px;bottom:14px;width:78px;opacity:.9;z-index:1;pointer-events:none;}
 .mascot-corner img{width:100%;}
 
@@ -111,6 +118,18 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 </style>
 </head>
 <body>
+
+<div class="login-gate" id="loginGate" style="display:none;">
+    <div class="login-card">
+        <span class="brand-mark">FOM STUDIOS</span>
+        <p class="lg-sub">Admin sign in</p>
+        <input type="email" id="lgEmail" placeholder="Email" autocomplete="username">
+        <input type="password" id="lgPass" placeholder="Password" autocomplete="current-password">
+        <button class="btn block" id="lgBtn">Log in</button>
+        <p class="lg-err" id="lgErr"></p>
+    </div>
+</div>
+
 <div class="scrim" id="scrim"></div>
 <div class="mobile-menu" id="mobileMenu">
     <button class="close-menu" id="closeMenu" aria-label="Close menu">&times;</button>
@@ -143,10 +162,14 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
             <div>
                 <span class="eyebrow">Overview</span>
                 <h1>Dashboard</h1>
-                <p id="updated">Live summary of your order database</p>
+                <p>Live summary of your order database</p>
             </div>
         </div>
-        <a href="database.html" class="btn">Manage orders →</a>
+        <div class="head-actions">
+            <span class="badge local" id="syncBadge">Local only</span>
+            <button class="btn ghost" id="logoutBtn" style="display:none;">Log out</button>
+            <a href="database.html" class="btn">Manage orders →</a>
+        </div>
     </div>
 
     <div id="content"></div>
@@ -154,9 +177,13 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 
 <div class="mascot-corner"><img src="assets/mascot.png" alt="" onerror="this.parentElement.style.display='none'"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
-const KEY = 'fom_orders';
 const RZA = n => 'R' + (Math.round(+n||0)).toLocaleString('en-ZA');
+const $ = id => document.getElementById(id);
 const STATUS_COLORS = { Pending:'#5B9AE0', Editing:'#02367B', Completed:'#2a2b2c', Delivered:'#7aa6c9', Cancelled:'#cd7f32' };
 const PRODUCT_COLORS = { Bronze:'#cd7f32', Silver:'#a9b2bd', Gold:'#e0a93b' };
 const PALETTE = ['#02367B','#5B9AE0','#2a2b2c','#6f6f6d','#cd7f32','#a9b2bd','#7aa6c9'];
@@ -164,8 +191,12 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const monthLabel = k => { const [y,m]=k.split('-'); return MONTHS[+m-1]+' '+y.slice(2); };
 const Rk = v => v>=1000 ? 'R'+(Math.round(v/100)/10)+'k' : 'R'+Math.round(v);
 const fmtDate = d => { const dt=new Date(d); return dt.getDate()+' '+MONTHS[dt.getMonth()]; };
+const esc = s => String(s==null?'':s).replace(/</g,'&lt;');
+const colorFor = (label,map,i)=> map[label] || PALETTE[i % PALETTE.length];
 
-function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; } }
+const CLOUD = (typeof firebaseConfig!=='undefined') && firebaseConfig &&
+              !String(firebaseConfig.apiKey||'').startsWith('PASTE') && (typeof firebase!=='undefined');
+let orders = [], auth = null;
 
 function donutSVG(segs, size=190, stroke=30){
   const r=(size-stroke)/2, c=2*Math.PI*r, cx=size/2;
@@ -178,106 +209,99 @@ function donutSVG(segs, size=190, stroke=30){
     <text x="${cx}" y="${cx-4}" text-anchor="middle" font-size="34" font-weight="800" fill="#2a2b2c">${total}</text>
     <text x="${cx}" y="${cx+18}" text-anchor="middle" font-size="12" fill="#6f6f6d" letter-spacing="1">ORDERS</text></svg>`;
 }
-const colorFor = (label,map,i)=> map[label] || PALETTE[i % PALETTE.length];
-
-function groupCount(orders, field){
-  const m={}; orders.forEach(o=>{ const k=o[field]||'—'; m[k]=(m[k]||0)+1; }); return m;
-}
+const groupCount = (arr,f)=>{ const m={}; arr.forEach(o=>{const k=o[f]||'—';m[k]=(m[k]||0)+1;}); return m; };
 
 function render(){
-  const orders = load();
-  const el = document.getElementById('content');
+  const el=$('content');
   if(!orders.length){
-    el.innerHTML = `<div class="card empty-card">
-      <img src="assets/mascot.png" alt="" onerror="this.style.display='none'">
+    el.innerHTML=`<div class="card empty-card"><img src="assets/mascot.png" alt="" onerror="this.style.display='none'">
       <h3>No orders yet</h3><p>Add some bookings in the database and they’ll show up here.</p>
       <a href="database.html" class="btn">Go to Database →</a></div>`;
     return;
   }
-  const totalRev = orders.reduce((a,o)=>a+(+o.total||0),0);
-  const totalPaid = orders.reduce((a,o)=>a+(+o.paid||0),0);
-  const outstanding = totalRev-totalPaid;
-  const pctPaid = totalRev? Math.round(totalPaid/totalRev*100):0;
+  const totalRev=orders.reduce((a,o)=>a+(+o.total||0),0);
+  const totalPaid=orders.reduce((a,o)=>a+(+o.paid||0),0);
+  const outstanding=totalRev-totalPaid;
+  const pctPaid=totalRev?Math.round(totalPaid/totalRev*100):0;
 
-  // upcoming deadlines: active orders with a deadline today or later
-  const today = new Date(); today.setHours(0,0,0,0);
-  const active = s => !['Completed','Delivered','Cancelled'].includes(s);
-  const upcoming = orders.filter(o => o.deadline && active(o.status) && new Date(o.deadline) >= today)
-                         .sort((a,b)=> new Date(a.deadline) - new Date(b.deadline));
-  const nextDue = upcoming.length ? fmtDate(upcoming[0].deadline) : '—';
+  const today=new Date(); today.setHours(0,0,0,0);
+  const active=s=>!['Completed','Delivered','Cancelled'].includes(s);
+  const upcoming=orders.filter(o=>o.deadline&&active(o.status)&&new Date(o.deadline)>=today).sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
+  const nextDue=upcoming.length?fmtDate(upcoming[0].deadline):'—';
 
-  // revenue by month (from shoot date)
-  const monthMap = {};
-  orders.forEach(o => { if(o.shootDate && o.shootDate.length>=7){ const k=o.shootDate.slice(0,7); monthMap[k]=(monthMap[k]||0)+(+o.total||0); } });
-  const months = Object.keys(monthMap).sort();
-  const monthMax = Math.max(...Object.values(monthMap), 1);
-  const monthBars = months.map(k => {
-    const v = monthMap[k]; const h = Math.round(v/monthMax*150);
-    return `<div class="vbar"><div class="vbar-v">${Rk(v)}</div><div class="vbar-c" style="height:${h}px"></div><div class="vbar-l">${monthLabel(k)}</div></div>`;
-  }).join('');
+  const monthMap={};
+  orders.forEach(o=>{ if(o.shootDate&&o.shootDate.length>=7){ const k=o.shootDate.slice(0,7); monthMap[k]=(monthMap[k]||0)+(+o.total||0); }});
+  const months=Object.keys(monthMap).sort();
+  const monthMax=Math.max(...Object.values(monthMap),1);
+  const monthBars=months.map(k=>{ const v=monthMap[k]; const h=Math.round(v/monthMax*150); return `<div class="vbar"><div class="vbar-v">${Rk(v)}</div><div class="vbar-c" style="height:${h}px"></div><div class="vbar-l">${monthLabel(k)}</div></div>`; }).join('');
 
-  const statusMap = groupCount(orders,'status');
-  const statusSegs = Object.keys(statusMap).map((k,i)=>({label:k,value:statusMap[k],color:colorFor(k,STATUS_COLORS,i)}));
-  const prodMap = groupCount(orders,'product');
-  const prodMax = Math.max(...Object.values(prodMap),1);
+  const statusMap=groupCount(orders,'status');
+  const statusSegs=Object.keys(statusMap).map((k,i)=>({label:k,value:statusMap[k],color:colorFor(k,STATUS_COLORS,i)}));
+  const prodMap=groupCount(orders,'product');
+  const prodMax=Math.max(...Object.values(prodMap),1);
+  const legend=statusSegs.map(s=>`<li><span class="dot" style="background:${s.color}"></span>${esc(s.label)}<span class="lv">${s.value}</span></li>`).join('');
+  const bars=Object.keys(prodMap).map((k,i)=>`<div class="bar-row"><span>${esc(k)}</span><div class="bar-track"><div class="bar-fill" style="width:${prodMap[k]/prodMax*100}%;background:${colorFor(k,PRODUCT_COLORS,i)}"></div></div><span class="bv">${prodMap[k]}</span></div>`).join('');
+  const recent=orders.slice(-5).reverse().map(o=>{ const col=colorFor(o.status,STATUS_COLORS,0);
+    return `<tr><td>${esc(o.orderId)}</td><td>${esc(o.customer)||'—'}</td><td>${esc(o.product)||'—'}</td><td><span class="tag" style="background:${col}">${esc(o.status)}</span></td><td style="text-align:right">${RZA(o.total)}</td><td style="text-align:right;color:var(--accent);font-weight:700">${RZA((+o.total||0)-(+o.paid||0))}</td></tr>`; }).join('');
 
-  const legend = statusSegs.map(s=>`<li><span class="dot" style="background:${s.color}"></span>${s.label}<span class="lv">${s.value}</span></li>`).join('');
-  const bars = Object.keys(prodMap).map((k,i)=>`
-    <div class="bar-row"><span>${k}</span>
-      <div class="bar-track"><div class="bar-fill" style="width:${prodMap[k]/prodMax*100}%;background:${colorFor(k,PRODUCT_COLORS,i)}"></div></div>
-      <span class="bv">${prodMap[k]}</span></div>`).join('');
-
-  const recent = orders.slice(-5).reverse().map(o=>{
-    const col = colorFor(o.status,STATUS_COLORS,0);
-    return `<tr><td>${esc(o.orderId)}</td><td>${esc(o.customer)||'—'}</td><td>${esc(o.product)||'—'}</td>
-      <td><span class="tag" style="background:${col}">${esc(o.status)}</span></td>
-      <td style="text-align:right">${RZA(o.total)}</td><td style="text-align:right;color:var(--accent);font-weight:700">${RZA((+o.total||0)-(+o.paid||0))}</td></tr>`;
-  }).join('');
-
-  el.innerHTML = `
+  el.innerHTML=`
     <div class="kpis">
       <div class="kpi"><div class="k-lbl">Total Orders</div><div class="k-val">${orders.length}</div><div class="k-sub">${statusMap['Completed']||0} completed</div></div>
       <div class="kpi"><div class="k-lbl">Total Revenue</div><div class="k-val">${RZA(totalRev)}</div><div class="k-sub">across all orders</div></div>
       <div class="kpi"><div class="k-lbl">Collected</div><div class="k-val">${RZA(totalPaid)}</div><div class="k-sub">${pctPaid}% of revenue</div></div>
       <div class="kpi accent"><div class="k-lbl">Outstanding</div><div class="k-val">${RZA(outstanding)}</div><div class="k-sub">still to be paid</div></div>
-      <div class="kpi"><div class="k-lbl">Upcoming Deadlines</div><div class="k-val">${upcoming.length}</div><div class="k-sub">${upcoming.length? 'next: '+nextDue : 'none pending'}</div></div>
+      <div class="kpi"><div class="k-lbl">Upcoming Deadlines</div><div class="k-val">${upcoming.length}</div><div class="k-sub">${upcoming.length?'next: '+nextDue:'none pending'}</div></div>
     </div>
-
     <div class="grid2">
       <div class="card"><h2>Orders by Status</h2><div class="donut-wrap">${donutSVG(statusSegs)}<ul class="legend">${legend}</ul></div></div>
       <div class="card"><h2>Orders by Product</h2><div class="bars">${bars}</div></div>
     </div>
-
     <div class="card" style="margin-bottom:20px;">
       <h2>Revenue by Month</h2>
-      ${months.length ? `<div class="vchart">${monthBars}</div>` : `<p style="color:var(--ink-soft);font-size:14px;">Add shoot dates to your orders to see monthly revenue here.</p>`}
+      ${months.length?`<div class="vchart">${monthBars}</div>`:`<p style="color:var(--ink-soft);font-size:14px;">Add shoot dates to your orders to see monthly revenue here.</p>`}
     </div>
-
     <div class="card" style="margin-bottom:20px;">
       <h2>Payment Collection</h2>
-      <div class="collect">
-        <div class="prog"><div class="prog-track"><div class="prog-fill" style="width:${pctPaid}%">${pctPaid>8?pctPaid+'%':''}</div></div></div>
-        <div class="legend2">Collected <b>${RZA(totalPaid)}</b> &nbsp;·&nbsp; Outstanding <b>${RZA(outstanding)}</b></div>
-      </div>
+      <div class="collect"><div class="prog"><div class="prog-track"><div class="prog-fill" style="width:${pctPaid}%">${pctPaid>8?pctPaid+'%':''}</div></div></div>
+        <div class="legend2">Collected <b>${RZA(totalPaid)}</b> &nbsp;·&nbsp; Outstanding <b>${RZA(outstanding)}</b></div></div>
     </div>
-
     <div class="card recent">
       <h2>Recent Orders</h2>
-      <table><thead><tr><th>ID</th><th>Customer</th><th>Product</th><th>Status</th><th style="text-align:right">Total</th><th style="text-align:right">Outstanding</th></tr></thead>
-      <tbody>${recent}</tbody></table>
+      <div class="recent-scroll"><table><thead><tr><th>ID</th><th>Customer</th><th>Product</th><th>Status</th><th style="text-align:right">Total</th><th style="text-align:right">Outstanding</th></tr></thead>
+      <tbody>${recent}</tbody></table></div>
     </div>`;
 }
-function esc(s){ return String(s==null?'':s).replace(/</g,'&lt;'); }
 
 /* hamburger */
-const mm=document.getElementById('mobileMenu'), sc=document.getElementById('scrim');
-document.getElementById('navToggle').onclick=()=>{mm.classList.add('open');sc.classList.add('show');};
-document.getElementById('closeMenu').onclick=()=>{mm.classList.remove('open');sc.classList.remove('show');};
+const mm=$('mobileMenu'), sc=$('scrim');
+$('navToggle').onclick=()=>{mm.classList.add('open');sc.classList.add('show');};
+$('closeMenu').onclick=()=>{mm.classList.remove('open');sc.classList.remove('show');};
 sc.onclick=()=>{mm.classList.remove('open');sc.classList.remove('show');};
 
-render();
-/* refresh if the database changed in another tab */
-window.addEventListener('storage', e => { if(e.key===KEY) render(); });
+/* ===== init: cloud (live) or local ===== */
+if(CLOUD){
+  firebase.initializeApp(firebaseConfig);
+  auth=firebase.auth();
+  const db=firebase.firestore();
+  db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+  const badge=$('syncBadge'); badge.textContent='☁ Cloud sync'; badge.className='badge cloud';
+  $('logoutBtn').style.display='inline-block';
+  $('logoutBtn').onclick=()=>auth.signOut();
+  const login=()=>{ $('lgErr').textContent=''; auth.signInWithEmailAndPassword($('lgEmail').value.trim(),$('lgPass').value)
+      .catch(err=>{ $('lgErr').textContent=/password|user|credential|email/i.test(err.code||'')?'Incorrect email or password.':(err.message||'Login failed.'); }); };
+  $('lgBtn').onclick=login;
+  $('lgPass').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
+  auth.onAuthStateChanged(u=>{
+    if(u){ $('loginGate').style.display='none';
+      db.collection('orders').orderBy('createdAt').onSnapshot(snap=>{ orders=snap.docs.map(d=>({id:d.id,...d.data()})); render(); }, err=>console.warn('Firestore:',err));
+    } else { $('loginGate').style.display='flex'; orders=[]; render(); }
+  });
+} else {
+  $('loginGate').style.display='none';
+  try{ orders=JSON.parse(localStorage.getItem('fom_orders'))||[]; }catch(e){ orders=[]; }
+  render();
+  window.addEventListener('storage',e=>{ if(e.key==='fom_orders'){ try{orders=JSON.parse(e.newValue)||[];}catch(x){orders=[];} render(); } });
+}
 </script>
 </body>
 </html>
