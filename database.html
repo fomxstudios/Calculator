@@ -183,10 +183,7 @@ td select.status{font-weight:600;}
     <div class="hintbar">Outstanding balance is calculated automatically (<b>Total − Paid</b>). View the <a href="dashboard.html" style="color:var(--accent);font-weight:600;">Dashboard →</a></div>
 </div>
 
-<!-- Firebase SDK (loads only if reachable; falls back to local mode otherwise) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Firebase config only (the SDK itself is loaded on demand, and only when configured) -->
 <script src="firebase-config.js"></script>
 <script>
 const STATUSES = ['Pending','Editing','Completed','Delivered','Cancelled'];
@@ -196,8 +193,12 @@ const esc = s => String(s==null?'':s).replace(/"/g,'&quot;').replace(/</g,'&lt;'
 const $ = id => document.getElementById(id);
 
 /* ---- decide mode: cloud (Firebase configured) or local ---- */
-const CLOUD = (typeof firebaseConfig!=='undefined') && firebaseConfig &&
-              !String(firebaseConfig.apiKey||'').startsWith('PASTE') && (typeof firebase!=='undefined');
+const configured = (typeof firebaseConfig!=='undefined') && firebaseConfig &&
+              !String(firebaseConfig.apiKey||'').startsWith('PASTE');
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+async function loadFirebase(){ const b='https://www.gstatic.com/firebasejs/10.12.0/';
+  await loadScript(b+'firebase-app-compat.js');
+  await Promise.all([loadScript(b+'firebase-auth-compat.js'), loadScript(b+'firebase-firestore-compat.js')]); }
 
 let orders = [];           // [{id, orderId, customer, ...}]
 let store, auth = null;
@@ -280,8 +281,8 @@ tbody.addEventListener('change',e=>{ const el=e.target; if(el.dataset.f){ orders
 tbody.addEventListener('click',e=>{ const rm=e.target.dataset.rm; if(rm!==undefined) store.remove(orders[+rm].id); });
 function recalcFoot(){ let t=0,p=0,o=0; orders.forEach(r=>{t+=+r.total||0;p+=+r.paid||0;o+=(+r.total||0)-(+r.paid||0);}); $('sumTotal').textContent=RZA(t);$('sumPaid').textContent=RZA(p);$('sumOut').textContent=RZA(o); }
 
-$('addBtn').onclick=()=>store.add(blankOrder());
-$('clearBtn').onclick=()=>{ if(confirm('Delete ALL orders? This cannot be undone.')) store.clear(); };
+$('addBtn').onclick=()=>{ if(store) store.add(blankOrder()); };
+$('clearBtn').onclick=()=>{ if(store && confirm('Delete ALL orders? This cannot be undone.')) store.clear(); };
 search.addEventListener('input',render);
 $('csvBtn').onclick=()=>{
   const head=['Order ID','Customer Name','Product','Shoot Date','Order Status','Total Amount','Amount Paid','Outstanding Balance','Payment Method','Deadline','Order Notes'];
@@ -297,7 +298,13 @@ $('closeMenu').onclick=()=>{mm.classList.remove('open');sc.classList.remove('sho
 sc.onclick=()=>{mm.classList.remove('open');sc.classList.remove('show');};
 
 /* ================= INIT ================= */
-if(CLOUD){
+function startLocal(){
+  $('loginGate').style.display='none';
+  const badge=$('syncBadge'); badge.textContent='💾 Local only'; badge.className='badge local';
+  $('logoutBtn').style.display='none';
+  store=localStore(); store.start();
+}
+function initCloud(){
   firebase.initializeApp(firebaseConfig);
   auth=firebase.auth();
   const db=firebase.firestore();
@@ -314,10 +321,12 @@ if(CLOUD){
     if(u){ $('loginGate').style.display='none'; store.start(); }
     else { $('loginGate').style.display='flex'; orders=[]; render(); }
   });
+}
+if(!configured){
+  startLocal();
 } else {
-  $('loginGate').style.display='none';
-  store=localStore();
-  store.start();
+  $('loginGate').style.display='flex';   // show login while the SDK loads in the background
+  loadFirebase().then(initCloud).catch(()=>{ console.warn('Firebase failed to load — using local mode'); startLocal(); });
 }
 </script>
 </body>
