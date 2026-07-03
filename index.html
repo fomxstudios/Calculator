@@ -438,7 +438,6 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
           <h4>Payment Instructions</h4>
           <p>Payment confirms booking</p>
           <p>No additional edits will be allowed unless specified</p>
-          <p style="margin-top:12px;color:var(--ink);font-weight:700;">www.fomstudios.co.za</p>
         </div>
         <div class="is-bank">
           <div><span class="bk">Standard Bank Lenasia</span><span class="bv">Ishaaq Adam</span></div>
@@ -869,7 +868,7 @@ $('exportBtn').addEventListener('click', () => { buildInvoice(); window.print();
 (function(){
   var configured = (typeof firebaseConfig!=='undefined') && firebaseConfig && !String(firebaseConfig.apiKey||'').startsWith('PASTE');
   if(!configured) return;                       // no keys yet → no gate (local use)
-  var gate=document.getElementById('loginGate'); gate.style.display='flex';
+  var gate=document.getElementById('loginGate');   // stays hidden until auth resolves → only shows if actually logged out (no flash)
   function loadScript(src){ return new Promise(function(res,rej){ var s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
   (async function(){
     try{
