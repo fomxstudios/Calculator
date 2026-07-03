@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FOM Studios | Internal Price Calculator</title>
-<link rel="icon" type="image/png" href="assets/logo.png">
-<link rel="apple-touch-icon" href="assets/logo.png">
+<link rel="icon" type="image/png" href="assets/mascot.png">
+<link rel="apple-touch-icon" href="assets/mascot.png">
 <style>
 :root{
     --bg: #f1f0ec;
@@ -65,6 +65,14 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 .mobile-menu .menu-media img{width:100%;max-width:140px;height:auto;object-fit:contain;}
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:1050;opacity:0;pointer-events:none;transition:opacity .3s;}
 .scrim.show{opacity:1;pointer-events:auto;}
+.login-gate{position:fixed;inset:0;background:var(--bg);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:var(--bg-pill);border:1px solid var(--line);border-radius:var(--radius-card);padding:34px 30px;max-width:370px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.1);}
+.login-card .brand-mark{font-size:22px;display:block;margin-bottom:4px;}
+.login-card .lg-sub{color:var(--ink-soft);font-size:13px;margin-bottom:22px;}
+.login-card input{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;font-family:inherit;margin-bottom:12px;background:#fff;color:var(--ink);}
+.login-card input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.lg-err{color:#c0392b;font-size:13px;margin-top:8px;min-height:16px;}
+.login-card .btn.block{width:100%;padding:13px;}
 @media(max-width:860px){nav.pill .nav-links{display:none;}}
 
 /* ---- page head ---- */
@@ -199,12 +207,24 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
     @page{ size:A4; margin:0; }
     body{ background:#fff; padding:0; }
     .app{ display:none !important; }
-    .scrim, .mobile-menu{ display:none !important; }
+    .scrim, .mobile-menu, .login-gate{ display:none !important; }
     #invoiceSheet{ display:block !important; }
 }
 </style>
 </head>
 <body>
+
+<!-- LOGIN GATE (only appears once your Firebase keys are set) -->
+<div class="login-gate" id="loginGate" style="display:none;">
+    <div class="login-card">
+        <span class="brand-mark">FOM STUDIOS</span>
+        <p class="lg-sub">Admin sign in</p>
+        <input type="email" id="lgEmail" placeholder="Email" autocomplete="username">
+        <input type="password" id="lgPass" placeholder="Password" autocomplete="current-password">
+        <button class="btn block" id="lgBtn">Log in</button>
+        <p class="lg-err" id="lgErr"></p>
+    </div>
+</div>
 
 <!-- ===================== APP (calculator UI) ===================== -->
 <div class="scrim" id="scrim"></div>
@@ -418,6 +438,7 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
           <h4>Payment Instructions</h4>
           <p>Payment confirms booking</p>
           <p>No additional edits will be allowed unless specified</p>
+          <p style="margin-top:12px;color:var(--ink);font-weight:700;">www.fomstudios.co.za</p>
         </div>
         <div class="is-bank">
           <div><span class="bk">Standard Bank Lenasia</span><span class="bv">Ishaaq Adam</span></div>
@@ -803,6 +824,7 @@ $('overtime').addEventListener('change', e => {
   render();
 });
 $('otHours').addEventListener('input', e => { state.overtime.hours = Math.max(0, parseFloat(e.target.value)||0); render(); });
+$('rush').addEventListener('change', e => { state.rush.on = e.target.value === 'yes'; render(); });
 $('ivBody').addEventListener('click', e => {
   const rm = e.target.getAttribute('data-rm');
   if(rm !== null){ (state.type === 'custom' ? state.custom : state.extras).splice(+rm,1); render(); }
@@ -838,6 +860,32 @@ $('exportBtn').addEventListener('click', () => { buildInvoice(); window.print();
   $('invdate').value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   buildExtraOptions();
   render();
+})();
+</script>
+
+<!-- ===== password gate (uses the same Firebase login as Dashboard/Database) ===== -->
+<script src="firebase-config.js"></script>
+<script>
+(function(){
+  var configured = (typeof firebaseConfig!=='undefined') && firebaseConfig && !String(firebaseConfig.apiKey||'').startsWith('PASTE');
+  if(!configured) return;                       // no keys yet → no gate (local use)
+  var gate=document.getElementById('loginGate'); gate.style.display='flex';
+  function loadScript(src){ return new Promise(function(res,rej){ var s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+  (async function(){
+    try{
+      var b='https://www.gstatic.com/firebasejs/10.12.0/';
+      await loadScript(b+'firebase-app-compat.js');
+      await loadScript(b+'firebase-auth-compat.js');
+      firebase.initializeApp(firebaseConfig);
+      var auth=firebase.auth();
+      var login=function(){ document.getElementById('lgErr').textContent='';
+        auth.signInWithEmailAndPassword(document.getElementById('lgEmail').value.trim(), document.getElementById('lgPass').value)
+          .catch(function(err){ document.getElementById('lgErr').textContent = /password|user|credential|email/i.test(err.code||'') ? 'Incorrect email or password.' : (err.message||'Login failed.'); }); };
+      document.getElementById('lgBtn').onclick=login;
+      document.getElementById('lgPass').addEventListener('keydown',function(e){ if(e.key==='Enter') login(); });
+      auth.onAuthStateChanged(function(u){ gate.style.display = u ? 'none' : 'flex'; });
+    }catch(e){ gate.style.display='none'; console.warn('Auth SDK failed to load:',e); }  // fail open so you're not locked out of your own tool
+  })();
 })();
 </script>
 </body>
