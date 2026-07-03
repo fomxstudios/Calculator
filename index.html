@@ -248,6 +248,7 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
                 <li><a href="database.html">Database</a></li>
                 <li><a href="index.html" class="active">Calculator</a></li>
             </ul>
+            <button class="nav-cta" id="logoutBtn" style="display:none;cursor:pointer;background:none;">Log out</button>
         </div>
     </nav>
 </div>
@@ -882,7 +883,12 @@ $('exportBtn').addEventListener('click', () => { buildInvoice(); window.print();
           .catch(function(err){ document.getElementById('lgErr').textContent = /password|user|credential|email/i.test(err.code||'') ? 'Incorrect email or password.' : (err.message||'Login failed.'); }); };
       document.getElementById('lgBtn').onclick=login;
       document.getElementById('lgPass').addEventListener('keydown',function(e){ if(e.key==='Enter') login(); });
-      auth.onAuthStateChanged(function(u){ gate.style.display = u ? 'none' : 'flex'; });
+      var logoutBtn=document.getElementById('logoutBtn');
+      if(logoutBtn) logoutBtn.onclick=function(){ auth.signOut(); };
+      auth.onAuthStateChanged(function(u){
+        gate.style.display = u ? 'none' : 'flex';
+        if(logoutBtn) logoutBtn.style.display = u ? 'inline-block' : 'none';
+      });
     }catch(e){ gate.style.display='none'; console.warn('Auth SDK failed to load:',e); }  // fail open so you're not locked out of your own tool
   })();
 })();
