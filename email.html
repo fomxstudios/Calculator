@@ -142,7 +142,6 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
                 <div class="field"><label for="fTime">Start time (optional)</label><input type="time" id="fTime"></div>
             </div>
             <div class="field"><label for="fLoc">Location (optional)</label><input type="text" id="fLoc" placeholder="Hyde Park, Johannesburg"></div>
-            <div class="field"><label for="fHero">Hero photo URL (optional)</label><input type="text" id="fHero" placeholder="https://www.fomstudios.co.za/assets/email-hero.jpg"></div>
             <div class="row2">
                 <div class="field"><label for="fTotal">Total (R)</label><input type="number" id="fTotal" min="0" step="50" value="0"></div>
                 <div class="field"><label for="fPaid">Amount paid (R)</label><input type="number" id="fPaid" min="0" step="50" value="0"></div>
@@ -193,7 +192,7 @@ function fields(){
   return {
     name: $('fName').value.trim(), email: $('fEmail').value.trim(),
     pkg: $('fPkg').value.trim(), date: $('fDate').value, time: $('fTime').value,
-    loc: $('fLoc').value.trim(), hero: $('fHero').value.trim(), total, paid, balance, due: $('fDue').value,
+    loc: $('fLoc').value.trim(), total, paid, balance, due: $('fDue').value,
     full: balance <= 0,
   };
 }
@@ -248,13 +247,11 @@ function buildEmailHtml(){
     ? `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef4ee;border:1px solid #cfe0d3;border-radius:14px;"><tr><td style="padding:16px 18px;color:#256b3d;font-size:14px;font-weight:700;">&#10003;&nbsp; Paid in full — no further payment required.</td></tr></table>`
     : `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef2fb;border:1px solid #bcd4f5;border-radius:14px;"><tr><td style="padding:16px 18px;color:${A};font-size:14px;line-height:1.7;">Amount paid: <b>${RZA(f.paid)}</b><br>Remaining balance: <b>${RZA(f.balance)}</b>${f.due?` — due before <b>${niceDate(f.due)}</b>`:''}</td></tr></table>`;
   const cal = eventTimes(f) ? `<tr><td align="center" style="padding:22px 0 4px;"><a href="${gcalUrl(f)}" target="_blank" style="display:inline-block;background:${A};color:#ffffff;text-decoration:none;border-radius:999px;padding:15px 34px;font-size:14px;font-weight:700;letter-spacing:.02em;">&#43;&nbsp; Add to Calendar</a></td></tr>` : '';
-  const hero = f.hero ? `<tr><td style="padding:0;"><img src="${f.hero}" alt="FOM Studios" width="600" style="width:100%;max-width:600px;height:auto;display:block;"></td></tr>` : '';
 
   return `
 <table width="100%" cellpadding="0" cellspacing="0" style="background:${BG};padding:26px 12px;font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;">
  <tr><td align="center">
   <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;">
-    ${hero}
     <!-- cinematic dark header -->
     <tr><td style="background:${INK};padding:40px 34px 34px;text-align:center;">
       <div style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:4px;">FOM STUDIOS</div>
@@ -327,7 +324,7 @@ function refresh(){
   $('preview').innerHTML = buildEmailHtml();
   $('dueWrap').style.display = fields().full ? 'none' : 'block';
 }
-['fName','fEmail','fPkg','fDate','fTime','fLoc','fHero','fTotal','fPaid','fDue'].forEach(id=>$(id).addEventListener('input', refresh));
+['fName','fEmail','fPkg','fDate','fTime','fLoc','fTotal','fPaid','fDue'].forEach(id=>$(id).addEventListener('input', refresh));
 
 /* actions */
 let toastT;
