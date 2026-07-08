@@ -202,6 +202,11 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
 .is-bank .bk{ } .is-bank .bv{ font-weight:700; }
 .is-mascot{ margin: 0 6mm 4mm 0; }
 .is-mascot img{ max-width: 150px; }
+.is-pay-btns{ display:flex; gap:12px; margin:16px 0 0; width:55%; margin-left:auto; }
+.paybtn{ flex:1; display:inline-block; text-decoration:none; border-radius:var(--radius-pill); padding:12px 18px; font-weight:700; font-size:13.5px; text-align:center; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.paybtn.deposit{ background:var(--accent); color:#fff; }
+.paybtn.full{ background:#fff; color:var(--accent); border:1.5px solid var(--accent); }
+.pay-note{ font-size:10.5px; color:var(--ink-soft); margin-top:8px; width:55%; margin-left:auto; text-align:right; }
 
 @media print{
     @page{ size:A4; margin:0; }
@@ -234,6 +239,7 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
         <li><a href="dashboard.html">Dashboard</a></li>
         <li><a href="database.html">Database</a></li>
         <li><a href="index.html">Price Calculator</a></li>
+        <li><a href="email.html">Confirmation Email</a></li>
     </ul>
     <div class="menu-media"><img src="assets/mascot.png" alt="FOM Studios mascot"></div>
 </div>
@@ -247,6 +253,7 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
                 <li><a href="dashboard.html">Dashboard</a></li>
                 <li><a href="database.html">Database</a></li>
                 <li><a href="index.html" class="active">Calculator</a></li>
+                <li><a href="email.html">Email</a></li>
             </ul>
             <button class="nav-cta" id="logoutBtn" style="display:none;cursor:pointer;background:none;">Log out</button>
         </div>
@@ -360,6 +367,19 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
                 <label for="invnotes">Extra notes (optional)</label>
                 <input type="text" id="invnotes" placeholder="e.g. Travel cost to KCC for 10 weeks">
             </div>
+            <div class="row2">
+                <div class="field">
+                    <label for="payMode">Payment buttons</label>
+                    <select id="payMode">
+                        <option value="both">Deposit + Full amount</option>
+                        <option value="balance">Balance only (after deposit)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="depPct">Deposit %</label>
+                    <input type="number" id="depPct" value="50" min="0" max="100" step="5">
+                </div>
+            </div>
             <button class="btn block" id="exportBtn">Export PDF invoice</button>
         </div>
 
@@ -424,9 +444,16 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
 
     <div class="is-totals">
       <div class="tr sub"><span>Subtotal:</span><span id="psSubtotal">R0,00</span></div>
-      <div class="tr tot"><span>Total:</span><span id="psTotal">R0,00</span></div>
+      <div class="tr sub" id="psDepRow" style="display:none;"><span id="psDepLbl">Less: deposit paid</span><span id="psDepVal">R0,00</span></div>
+      <div class="tr tot"><span id="psTotLbl">Total:</span><span id="psTotal">R0,00</span></div>
     </div>
     <div class="is-due"><span>Amount Due:</span><span id="psDue">R0,00</span></div>
+
+    <div class="is-pay-btns" id="psPayBtns" style="display:none;">
+      <a class="paybtn deposit" id="psPayDeposit" href="#" target="_blank" rel="noopener">Pay Deposit</a>
+      <a class="paybtn full" id="psPayFull" href="#" target="_blank" rel="noopener">Pay Full</a>
+    </div>
+    <div class="pay-note" id="psPayNote" style="display:none;">Secure payment via Yoco. 50% non-refundable deposit secures your booking; balance payable before the shoot date.</div>
 
     <div class="is-notes" id="psNotesWrap">
       <h4>Notes</h4>
@@ -508,6 +535,17 @@ const CONFIG = {
   photoTier: { Bronze: "30-40 Photos", Silver: "40-50 Photos", Gold: "50-60 Photos" },
 };
 /* ── end of editable prices ──────────────────────────────────────────── */
+
+/* ===== Yoco "Pay Now" buttons on the PDF (optional) =====================
+   Paste your deployed Cloudflare Worker URL below to switch on the Pay
+   Deposit / Pay Full buttons in the exported invoice. Leave blank to hide
+   them (invoice still exports normally). depositPct sets the deposit split. */
+const PAY = {
+  workerUrl: "",      // e.g. "https://fom-yoco.yourname.workers.dev"
+  depositPct: 50,
+  mode: "both",       // "both" = Deposit + Full ; "balance" = remaining balance only
+};
+let invoiceTotal = 0;   // set by buildInvoice, used to size the payment links
 
 const MASCOT = {
   Bronze: "assets/mascot-head-bronze.jpg",
@@ -779,8 +817,23 @@ function buildInvoice(){
     body.appendChild(tr);
   }
   document.getElementById('psSubtotal').textContent = RZA(total);
-  document.getElementById('psTotal').textContent = RZA(total);
-  document.getElementById('psDue').textContent = RZA(total);
+  if(PAY.mode === 'balance'){
+    const dep = Math.round(total * (PAY.depositPct/100));
+    const bal = total - dep;
+    document.getElementById('psDepRow').style.display = 'flex';
+    document.getElementById('psDepLbl').textContent = `Less: ${PAY.depositPct}% deposit paid`;
+    document.getElementById('psDepVal').textContent = '−' + RZA(dep);
+    document.getElementById('psTotLbl').textContent = 'Balance due:';
+    document.getElementById('psTotal').textContent = RZA(bal);
+    document.getElementById('psDue').textContent = RZA(bal);
+    invoiceTotal = bal;
+  } else {
+    document.getElementById('psDepRow').style.display = 'none';
+    document.getElementById('psTotLbl').textContent = 'Total:';
+    document.getElementById('psTotal').textContent = RZA(total);
+    document.getElementById('psDue').textContent = RZA(total);
+    invoiceTotal = total;
+  }
 
   // notes: package contents + optional custom note
   const notes = document.getElementById('psNotes');
@@ -835,7 +888,52 @@ $('ivBody').addEventListener('input', e => {
     if(arr[+e.target.dataset.i]){ arr[+e.target.dataset.i].qty = Math.max(1, parseInt(e.target.value)||1); render(); }
   }
 });
-$('exportBtn').addEventListener('click', () => { buildInvoice(); window.print(); });
+$('depPct').addEventListener('input', e => { PAY.depositPct = Math.min(100, Math.max(0, parseFloat(e.target.value)||0)); });
+$('payMode').addEventListener('change', e => { PAY.mode = e.target.value; });
+
+async function createCheckout(amount, kind){
+  const r = await fetch(PAY.workerUrl, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ amount, kind, invoice: $('invno').value||'', client: $('client').value||'' })
+  });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok || !d.redirectUrl) throw new Error(d.error || 'checkout failed');
+  return d.redirectUrl;
+}
+async function preparePayLinks(){
+  const btns = $('psPayBtns'), note = $('psPayNote');
+  btns.style.display = 'none'; note.style.display = 'none';
+  if(!PAY.workerUrl || !invoiceTotal) return;                 // not configured → no buttons
+
+  if(PAY.mode === 'balance'){
+    // invoiceTotal already equals the remaining balance (set in buildInvoice)
+    $('psPayDeposit').style.display = 'none';
+    const u = await createCheckout(invoiceTotal, 'balance');
+    const b = $('psPayFull'); b.href = u; b.textContent = `Pay Balance — ${RZA(invoiceTotal)}`;
+    note.textContent = 'Secure payment via Yoco. This is the remaining balance for your booking, payable before the shoot date.';
+    btns.style.display = 'flex'; note.style.display = 'block';
+    return;
+  }
+
+  const dep = Math.round(invoiceTotal * (PAY.depositPct/100));
+  const jobs = [];
+  if(PAY.depositPct > 0 && PAY.depositPct < 100 && dep >= 2){
+    jobs.push(createCheckout(dep,'deposit').then(u=>{ const b=$('psPayDeposit'); b.href=u; b.textContent=`Pay ${PAY.depositPct}% Deposit — ${RZA(dep)}`; b.style.display=''; }));
+  } else { $('psPayDeposit').style.display='none'; }
+  jobs.push(createCheckout(invoiceTotal,'full').then(u=>{ const b=$('psPayFull'); b.href=u; b.textContent=`Pay Full — ${RZA(invoiceTotal)}`; }));
+  await Promise.all(jobs);
+  note.textContent = 'Secure payment via Yoco. 50% non-refundable deposit secures your booking; balance payable before the shoot date.';
+  btns.style.display = 'flex'; note.style.display = 'block';
+}
+$('exportBtn').addEventListener('click', async () => {
+  buildInvoice();
+  const btn = $('exportBtn'), orig = btn.textContent;
+  if(PAY.workerUrl){ btn.textContent = 'Creating payment links…'; btn.disabled = true; }
+  try{ await preparePayLinks(); }
+  catch(e){ console.warn('Yoco:', e); alert('Could not create the Yoco payment links (check the Worker URL and your Yoco key). The invoice will still export without Pay buttons.'); }
+  btn.textContent = orig; btn.disabled = false;
+  window.print();
+});
 
 /* ---- self-test ---- */
 (function(){ let ok=true;
