@@ -480,6 +480,7 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
   </div>
 </div>
 
+<script src="pay-config.js"></script>
 <script>
 /* ╔══════════════════════════════════════════════════════════════════╗
    ║  EDIT YOUR PRICES HERE — everything the calculator uses is below.   ║
@@ -536,13 +537,12 @@ const CONFIG = {
 };
 /* ── end of editable prices ──────────────────────────────────────────── */
 
-/* ===== Yoco "Pay Now" buttons on the PDF (optional) =====================
-   Paste your deployed Cloudflare Worker URL below to switch on the Pay
-   Deposit / Pay Full buttons in the exported invoice. Leave blank to hide
-   them (invoice still exports normally). depositPct sets the deposit split. */
+/* ===== Yoco "Pay Now" buttons =====================
+   The Worker URL now lives in pay-config.js so it survives calculator updates.
+   (Set PAY_WORKER_URL there.) mode is chosen per-invoice via the dropdown. */
 const PAY = {
-  workerUrl: "",      // e.g. "https://fom-yoco.yourname.workers.dev"
-  depositPct: 50,
+  workerUrl:  (typeof PAY_WORKER_URL  !== 'undefined') ? PAY_WORKER_URL  : "",
+  depositPct: (typeof PAY_DEPOSIT_PCT !== 'undefined') ? PAY_DEPOSIT_PCT : 50,
   mode: "both",       // "both" = Deposit + Full ; "balance" = remaining balance only
 };
 let invoiceTotal = 0;   // set by buildInvoice, used to size the payment links
