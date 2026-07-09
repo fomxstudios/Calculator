@@ -99,7 +99,8 @@ select{
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236f6f6d' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat:no-repeat; background-position: right 14px center; padding-right:36px; cursor:pointer;
 }
-select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+select:focus, input:focus, textarea:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+textarea{ width:100%; min-width:0; max-width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-size:14px; font-family:inherit; color:var(--ink); background:#fff; resize:vertical; }
 .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .row-add{ display:grid; grid-template-columns: 1fr 70px auto; gap:8px; align-items:end; }
 .btn{ border:1px solid var(--accent); background:var(--accent); color:var(--ink-on-dark); border-radius:var(--radius-pill); padding:12px 18px; font-size:13px; font-weight:600; cursor:pointer; transition:.2s ease; white-space:nowrap; }
@@ -380,7 +381,25 @@ select:focus, input:focus{ outline:2px solid var(--accent); outline-offset:1px; 
                     <input type="number" id="depPct" value="50" min="0" max="100" step="5">
                 </div>
             </div>
+            <div class="field" id="sendModeField" style="display:none;">
+                <label for="sendMode">Working on</label>
+                <select id="sendMode">
+                    <option value="desktop">Desktop — PDF with pay buttons</option>
+                    <option value="mobile">Mobile — WhatsApp pay link</option>
+                </select>
+            </div>
             <button class="btn block" id="exportBtn">Export PDF invoice</button>
+            <div id="waSection" style="display:none;margin-top:12px;">
+                <div class="field">
+                    <label for="waMsg">WhatsApp message (editable — pay links added automatically)</label>
+                    <textarea id="waMsg" rows="4"></textarea>
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <button class="btn ghost" id="waPayBtn" style="flex:1;">WhatsApp pay link</button>
+                    <button class="btn ghost" id="copyPayBtn" style="flex:1;">Copy</button>
+                </div>
+                <div class="hint" style="margin-top:6px;">On mobile the PDF exports with no pay buttons (they don't work on phones) — send the tappable link over WhatsApp instead.</div>
+            </div>
         </div>
 
         <!-- INVOICE (live, on screen) -->
@@ -544,8 +563,10 @@ const PAY = {
   workerUrl:  (typeof PAY_WORKER_URL  !== 'undefined') ? PAY_WORKER_URL  : "",
   depositPct: (typeof PAY_DEPOSIT_PCT !== 'undefined') ? PAY_DEPOSIT_PCT : 50,
   mode: "both",       // "both" = Deposit + Full ; "balance" = remaining balance only
+  device: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
 };
 let invoiceTotal = 0;   // set by buildInvoice, used to size the payment links
+let liveTotal = 0;      // current on-screen total, used to prefill the WhatsApp message
 
 const MASCOT = {
   Bronze: "assets/mascot-head-bronze.jpg",
@@ -741,6 +762,8 @@ function render(){
   document.getElementById('tpAmt').textContent = RZA(grand);
   // "Excluding transport" caption only when no transport added
   document.getElementById('exclNote').style.display = state.transport.on ? 'none' : 'block';
+  liveTotal = grand;
+  refreshWaMsg();
   return grand;
 }
 
@@ -835,9 +858,11 @@ function buildInvoice(){
     invoiceTotal = total;
   }
 
-  document.getElementById('psPayIntro').textContent = PAY.workerUrl
-    ? 'Pay instantly by card using the buttons above, or by EFT to the account below.'
-    : 'Pay by EFT using the banking details below.';
+  document.getElementById('psPayIntro').textContent =
+    !PAY.workerUrl ? 'Pay by EFT using the banking details below.'
+    : (PAY.device === 'mobile'
+        ? 'Pay by card using the link we sent you, or by EFT to the account below.'
+        : 'Pay instantly by card using the buttons above, or by EFT to the account below.');
 
   // notes: package contents + optional custom note
   const notes = document.getElementById('psNotes');
@@ -929,13 +954,71 @@ async function preparePayLinks(){
   note.textContent = 'Secure payment via Yoco. 50% non-refundable deposit secures your booking; balance payable before the shoot date.';
   btns.style.display = 'flex'; note.style.display = 'block';
 }
+/* ---- shareable pay link (works on mobile, unlike PDF buttons) ---- */
+function packageLabel(){
+  return state.type==='custom' ? 'your custom quote'
+    : (TIERED.includes(state.type) ? `${state.tier} — ${TYPE_LABEL[state.type]}` : TYPE_LABEL[state.type]);
+}
+let lastAutoMsg = '';
+function defaultWaMsg(){ return `Hi! Here's your FOM Studios invoice for ${packageLabel()} — ${RZA(liveTotal)}. Pay securely below:`; }
+function refreshWaMsg(){
+  const ta = document.getElementById('waMsg'); if(!ta) return;
+  const def = defaultWaMsg();
+  if(ta.value.trim()==='' || ta.value===lastAutoMsg) ta.value = def;   // don't clobber your edits
+  lastAutoMsg = def;
+}
+async function makePayMessage(){
+  buildInvoice();                                  // refresh invoiceTotal for current selection + mode
+  if(!PAY.workerUrl){ alert('Add your Cloudflare Worker URL to pay-config.js first.'); return null; }
+  if(!invoiceTotal){ alert('Choose a package or enter an amount first.'); return null; }
+  let m = ($('waMsg').value.trim()) || defaultWaMsg();   // your editable intro
+  if(PAY.mode === 'balance'){
+    const url = await createCheckout(invoiceTotal,'balance');
+    m += `\n\nPay balance (${RZA(invoiceTotal)}):\n${url}`;
+  } else {
+    const dep = Math.round(invoiceTotal*(PAY.depositPct/100));
+    let depUrl = null;
+    if(PAY.depositPct>0 && PAY.depositPct<100 && dep>=2) depUrl = await createCheckout(dep,'deposit');
+    const fullUrl = await createCheckout(invoiceTotal,'full');
+    if(depUrl) m += `\n\nPay ${PAY.depositPct}% deposit (${RZA(dep)}):\n${depUrl}`;
+    m += `\n\nPay in full (${RZA(invoiceTotal)}):\n${fullUrl}`;
+  }
+  m += `\n\nSecure card payment via Yoco.`;
+  return m;
+}
+$('sendMode').addEventListener('change', e => {
+  PAY.device = e.target.value;
+  $('waSection').style.display = (PAY.device==='mobile' && PAY.workerUrl) ? 'block' : 'none';
+  if(PAY.device==='mobile') refreshWaMsg();
+});
+$('waPayBtn').addEventListener('click', async () => {
+  const b=$('waPayBtn'), o=b.textContent; b.textContent='Creating…'; b.disabled=true;
+  try{ const m=await makePayMessage(); if(m) window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank'); }
+  catch(e){ console.warn(e); alert('Could not create the pay link — check your Worker URL / connection.'); }
+  b.textContent=o; b.disabled=false;
+});
+$('copyPayBtn').addEventListener('click', async () => {
+  const b=$('copyPayBtn'), o=b.textContent; b.textContent='Creating…'; b.disabled=true;
+  try{
+    const m=await makePayMessage();
+    if(m){ try{ await navigator.clipboard.writeText(m); }catch(_){}
+      b.textContent='Copied!'; setTimeout(()=>{ b.textContent=o; b.disabled=false; },1500); return; }
+  }catch(e){ console.warn(e); alert('Could not create the pay link — check your Worker URL / connection.'); }
+  b.textContent=o; b.disabled=false;
+});
+
 $('exportBtn').addEventListener('click', async () => {
   buildInvoice();
   const btn = $('exportBtn'), orig = btn.textContent;
-  if(PAY.workerUrl){ btn.textContent = 'Creating payment links…'; btn.disabled = true; }
-  try{ await preparePayLinks(); }
-  catch(e){ console.warn('Yoco:', e); alert('Could not create the Yoco payment links (check the Worker URL and your Yoco key). The invoice will still export without Pay buttons.'); }
-  btn.textContent = orig; btn.disabled = false;
+  if(PAY.device === 'desktop' && PAY.workerUrl){
+    btn.textContent = 'Creating payment links…'; btn.disabled = true;
+    try{ await preparePayLinks(); }
+    catch(e){ console.warn('Yoco:', e); alert('Could not create the Yoco payment links (check the Worker URL and your Yoco key). The invoice will still export without Pay buttons.'); }
+    btn.textContent = orig; btn.disabled = false;
+  } else {
+    // mobile (or no worker) → export a clean PDF with no card buttons (they don't work on phones)
+    $('psPayBtns').style.display = 'none'; $('psPayNote').style.display = 'none';
+  }
   window.print();
 });
 
@@ -962,6 +1045,11 @@ $('exportBtn').addEventListener('click', async () => {
   $('invdate').value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   buildExtraOptions();
   render();
+  if(PAY.workerUrl){
+    $('sendModeField').style.display = 'block';
+    $('sendMode').value = PAY.device;                                    // auto-detected default
+    if(PAY.device === 'mobile'){ $('waSection').style.display = 'block'; refreshWaMsg(); }
+  }
 })();
 </script>
 
