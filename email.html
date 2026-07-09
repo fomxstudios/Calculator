@@ -64,7 +64,8 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:700;margin-bottom:16px;}
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;}
-input[type=text],input[type=email],input[type=number],input[type=date],input[type=time],select{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff;}
+input[type=text],input[type=email],input[type=number],input[type=date],input[type=time],select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff;}
+.row2>*{min-width:0;}
 input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .btn{border:1px solid var(--accent);background:var(--accent);color:var(--ink-on-dark);border-radius:var(--radius-pill);padding:12px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;}
