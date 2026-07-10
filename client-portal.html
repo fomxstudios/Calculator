@@ -291,7 +291,7 @@ var firebaseConfig = {
 };
 </script>
 <script type="module">
-import { initializeApp }                                           from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { initializeApp, getApp }                                    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail,
          onAuthStateChanged, signOut }                               from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, onSnapshot }                      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -455,7 +455,11 @@ function init(){
     }
 
     // Firebase SDKs are loaded in <head> — initialise directly
-    const app  = initializeApp(firebaseConfig);
+    // Guard against double-init (throws if called twice with same app name)
+    // Guard against double-init on page reload
+    let app;
+    try { app = initializeApp(firebaseConfig); }
+    catch(e) { app = getApp(); }
     const auth = getAuth(app);
     const db   = getFirestore(app);
     
