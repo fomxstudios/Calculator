@@ -64,7 +64,7 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:700;margin-bottom:16px;}
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;}
-input[type=text],input[type=email],input[type=number],input[type=date],input[type=time],select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff;}
+input[type=text],input[type=email],input[type=number],input[type=date],input[type=time],select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff;-webkit-appearance:none;appearance:none;}
 /* iOS: date/time pickers otherwise ignore width and overflow their box */
 input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;display:block;}
 input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left;margin:0;}
@@ -79,9 +79,10 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
 .btn.ghost:hover{background:var(--ink);color:var(--bg-pill);}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
 .actions .btn{flex:1;min-width:140px;text-align:center;}
+@media(max-width:480px){.actions{flex-direction:column;}.actions .btn{width:100%;flex:none;}}
 .howto{font-size:12.5px;color:var(--ink-soft);margin-top:14px;line-height:1.7;}
 .howto b{color:var(--ink);}
-.preview-wrap{background:#e9e7e1;border:1px solid var(--line);border-radius:var(--radius-card);padding:18px;overflow-x:auto;}
+.preview-wrap{background:#e9e7e1;border:1px solid var(--line);border-radius:var(--radius-card);padding:18px;overflow-x:auto;max-width:100%;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-dark);color:#fff;padding:12px 22px;border-radius:var(--radius-pill);font-size:14px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:4000;}
 .toast.show{opacity:1;}
 @media(max-width:860px){nav.pill .nav-links{display:none;}.nav-shell{padding:14px var(--gutter) 0;}}
