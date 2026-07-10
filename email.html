@@ -382,73 +382,6 @@ function buildEmailHtml(){
  </td></tr>
 </table>`;
 }
-  const f = fields();
-  const A='#02367B', A2='#5B9AE0', INK='#2a2b2c', SOFT='#6f6f6d', BG='#f1f0ec', LINE='#e6e4dd', CARD='#f7f6f2';
-  const row = (k,v)=> v ? `<tr><td style="padding:9px 2px;color:${SOFT};font-size:14px;border-bottom:1px solid ${LINE};">${k}</td><td style="padding:9px 2px;color:${INK};font-size:14px;font-weight:700;text-align:right;border-bottom:1px solid ${LINE};">${v}</td></tr>` : '';
-  const payBlock = f.full
-    ? `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef4ee;border:1px solid #cfe0d3;border-radius:14px;"><tr><td style="padding:16px 18px;color:#256b3d;font-size:14px;font-weight:700;">&#10003;&nbsp; Paid in full — no further payment required.</td></tr></table>`
-    : `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef2fb;border:1px solid #bcd4f5;border-radius:14px;"><tr><td style="padding:16px 18px;color:${A};font-size:14px;line-height:1.7;">Amount paid: <b>${RZA(f.paid)}</b><br>Remaining balance: <b>${RZA(f.balance)}</b>${f.due?` — due before <b>${niceDate(f.due)}</b>`:''}</td></tr></table>`;
-  const cal = eventTimes(f) ? `<tr><td align="center" style="padding:22px 0 4px;"><a href="${gcalUrl(f)}" target="_blank" style="display:inline-block;background:${A};color:#ffffff;text-decoration:none;border-radius:999px;padding:15px 34px;font-size:14px;font-weight:700;letter-spacing:.02em;">&#43;&nbsp; Add to Calendar</a></td></tr>` : '';
-
-  return `
-<table width="100%" cellpadding="0" cellspacing="0" style="background:${BG};padding:26px 12px;font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;">
- <tr><td align="center">
-  <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;">
-    <!-- cinematic dark header -->
-    <tr><td style="background:${INK};padding:40px 34px 34px;text-align:center;">
-      <div style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:4px;">FOM STUDIOS</div>
-      <div style="width:46px;height:3px;background:${A2};border-radius:3px;margin:16px auto;line-height:3px;font-size:0;">&nbsp;</div>
-      <div style="color:${A2};font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">Booking Confirmed</div>
-      <div style="color:#ffffff;font-size:30px;font-weight:800;margin-top:10px;line-height:1.15;">You're booked in! 🎉</div>
-    </td></tr>
-    <!-- greeting -->
-    <tr><td style="padding:28px 34px 0;color:${INK};font-size:15px;line-height:1.6;">
-      Hi ${f.name||'there'},<br><br>
-      Thank you — your booking with <b>FOM Studios</b> is confirmed. Here are your details:
-    </td></tr>
-    <!-- details card -->
-    <tr><td style="padding:16px 34px 0;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:${CARD};border:1px solid ${LINE};border-radius:16px;">
-        <tr><td style="padding:8px 20px;">
-          <table width="100%" cellpadding="0" cellspacing="0">
-            ${row('Package', f.pkg)}
-            ${row('Date', niceDate(f.date))}
-            ${row('Time', f.time)}
-            ${row('Location', f.loc)}
-            <tr><td style="padding:11px 2px;color:${INK};font-size:15px;font-weight:800;">Total</td><td style="padding:11px 2px;color:${INK};font-size:15px;font-weight:800;text-align:right;">${RZA(f.total)}</td></tr>
-          </table>
-        </td></tr>
-      </table>
-    </td></tr>
-    <!-- payment status -->
-    <tr><td style="padding:16px 34px 0;">${payBlock}</td></tr>
-    <!-- add to calendar -->
-    <tr><td style="padding:0 34px;"><table width="100%" cellpadding="0" cellspacing="0">${cal}</table></td></tr>
-    <!-- mascot + sign off -->
-    <tr><td align="center" style="padding:28px 34px 4px;">
-      <img src="https://www.fomstudios.co.za/assets/mascot.png" alt="" width="74" style="width:74px;height:auto;display:inline-block;">
-      <div style="color:${SOFT};font-size:14px;line-height:1.6;margin-top:12px;">We can't wait to capture your shoot. If anything changes, just reply to this email.</div>
-      <div style="color:${INK};font-size:14px;font-weight:800;margin-top:12px;">— The FOM Studios Team</div>
-    </td></tr>
-    <!-- footer -->
-    <tr><td style="padding:24px 34px 30px;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:${INK};border-radius:16px;">
-        <tr><td style="padding:24px 22px;text-align:center;">
-          <div style="color:#ffffff;font-weight:800;letter-spacing:2px;font-size:15px;">FOM STUDIOS</div>
-          <div style="color:#b9b8b5;font-size:12.5px;margin-top:6px;">Photography &amp; Videography · Johannesburg, South Africa</div>
-          <div style="margin-top:14px;font-size:13px;">
-            <a href="${BRAND.site}" style="color:${A2};text-decoration:none;">Website</a> &nbsp;·&nbsp;
-            <a href="${BRAND.instagram}" style="color:${A2};text-decoration:none;">Instagram</a> &nbsp;·&nbsp;
-            <a href="mailto:${BRAND.email}" style="color:${A2};text-decoration:none;">Email</a> &nbsp;·&nbsp;
-            <span style="color:#b9b8b5;">${BRAND.phone}</span>
-          </div>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
- </td></tr>
-</table>`;
-}
 function plainText(){
   const f = fields();
   if(f.type === 'ready'){
@@ -478,8 +411,9 @@ function refresh(){
   $('portalWrap').style.display = isReady ? 'block' : 'none';
   $('preview').innerHTML = buildEmailHtml();
 }
-['fType','fName','fEmail','fPkg','fDate','fTime','fLoc','fTotal','fPaid','fDue','fPortal'].forEach(id=>$(id) && $(id).addEventListener('input', refresh));
-$('fType').addEventListener('change', refresh);
+/* trigger refresh on every input/change in the form */
+document.querySelector('.panel').addEventListener('input', refresh);
+document.querySelector('.panel').addEventListener('change', refresh);
 
 /* actions */
 let toastT;
