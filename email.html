@@ -148,6 +148,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
                     <option value="ready">Files Ready</option>
                 </select>
             </div>
+            <div id="confirmationFields">
             <div class="field"><label for="fName">Customer name</label><input type="text" id="fName" placeholder="Jane Doe"></div>
             <div class="field"><label for="fEmail">Customer email</label><input type="email" id="fEmail" placeholder="jane@email.com"></div>
             <div class="field"><label for="fPkg">Package / service</label><input type="text" id="fPkg" placeholder="Gold — Photography & Videography"></div>
@@ -161,7 +162,13 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
                 <div class="field"><label for="fPaid">Amount paid (R)</label><input type="number" id="fPaid" min="0" step="50" value="0"></div>
             </div>
             <div class="field" id="dueWrap"><label for="fDue">Balance due before</label><input type="date" id="fDue"></div>
-            <div class="field" id="portalWrap" style="display:none;"><label for="fPortal">Client portal URL</label><input type="text" id="fPortal" value="https://www.fomstudios.co.za/client-portal.html" placeholder="https://www.fomstudios.co.za/client-portal.html"></div>
+            </div>
+            <div id="readyFields" style="display:none;">
+            <div class="field"><label for="fReadyName">Customer name</label><input type="text" id="fReadyName" placeholder="Jane Doe"></div>
+            <div class="field"><label for="fReadyEmail">Customer email</label><input type="email" id="fReadyEmail" placeholder="jane@email.com"></div>
+            <div class="field"><label for="fReadyPkg">Package (optional)</label><input type="text" id="fReadyPkg" placeholder="Gold — Photography & Videography"></div>
+            <div class="field"><label for="fPortal">Client portal URL</label><input type="text" id="fPortal" value="https://www.fomstudios.co.za/client-portal.html"></div>
+            </div>
 
             <div class="actions">
                 <button class="btn" id="copyBtn">Copy email</button>
@@ -202,13 +209,21 @@ const BRAND = {
 };
 
 function fields(){
-  const total = +$('fTotal').value||0, paid = +$('fPaid').value||0;
+  const type = $('fType').value;
+  const isReady = type === 'ready';
+  const total = +($('fTotal')?$('fTotal').value:0)||0;
+  const paid  = +($('fPaid') ?$('fPaid').value :0)||0;
   const balance = Math.max(0, total - paid);
   return {
-    type: $('fType').value,
-    name: $('fName').value.trim(), email: $('fEmail').value.trim(),
-    pkg: $('fPkg').value.trim(), date: $('fDate').value, time: $('fTime').value,
-    loc: $('fLoc').value.trim(), total, paid, balance, due: $('fDue').value,
+    type,
+    name:  isReady ? ($('fReadyName').value.trim())  : $('fName').value.trim(),
+    email: isReady ? ($('fReadyEmail').value.trim()) : $('fEmail').value.trim(),
+    pkg:   isReady ? ($('fReadyPkg').value.trim())   : $('fPkg').value.trim(),
+    date: $('fDate') ? $('fDate').value : '',
+    time: $('fTime') ? $('fTime').value : '',
+    loc:  $('fLoc')  ? $('fLoc').value.trim()  : '',
+    total, paid, balance,
+    due:  $('fDue')  ? $('fDue').value  : '',
     portal: $('fPortal').value.trim() || 'https://www.fomstudios.co.za/client-portal.html',
     full: balance <= 0,
   };
@@ -407,8 +422,13 @@ function refresh(){
   const f = fields();
   const isReady = f.type === 'ready';
   $('pageTitle').textContent = isReady ? 'Files Ready Email' : 'Confirmation Email';
-  $('dueWrap').style.display = (f.full || isReady) ? 'none' : 'block';
-  $('portalWrap').style.display = isReady ? 'block' : 'none';
+  // toggle field groups
+  $('confirmationFields').style.display = isReady ? 'none' : 'block';
+  $('readyFields').style.display = isReady ? 'block' : 'none';
+  // hide ics + due date for ready email
+  const icsBtn = $('icsBtn');
+  if(icsBtn) icsBtn.style.display = isReady ? 'none' : 'inline-flex';
+  if($('dueWrap')) $('dueWrap').style.display = (f.full || isReady) ? 'none' : 'block';
   $('preview').innerHTML = buildEmailHtml();
 }
 /* trigger refresh on every input/change in the form */
