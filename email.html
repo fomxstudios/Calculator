@@ -318,6 +318,29 @@ function buildEmailHtml(){
       <div style="color:${SOFT};font-size:14px;line-height:1.6;margin-top:12px;">We can't wait to capture your shoot. If anything changes, just reply to this email.</div>
       <div style="color:${INK};font-size:14px;font-weight:800;margin-top:12px;">— The FOM Studios Team</div>
     </td></tr>
+    <!-- Client Portal CTA -->
+    <tr><td style="padding:4px 34px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef2fb;border:1px solid #bcd4f5;border-radius:16px;">
+        <tr><td style="padding:22px 24px;text-align:center;">
+          <div style="color:${INK};font-size:15px;font-weight:800;margin-bottom:6px;">Your Client Portal is ready</div>
+          <div style="color:${SOFT};font-size:13.5px;margin-bottom:18px;">Log in anytime to view your booking details, contract, invoice, and download your files once they're ready.</div>
+          <a href="${f.portal}" target="_blank" style="display:inline-block;background:${A};color:#ffffff;text-decoration:none;border-radius:999px;padding:13px 28px;font-size:14px;font-weight:700;">Go to Client Portal</a>
+          <div style="color:#9a9895;font-size:12px;margin-top:10px;">${f.portal}</div>
+        </td></tr>
+        <tr><td style="padding:0 24px 18px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f6f2;border-radius:10px;">
+            <tr><td style="padding:14px 16px;">
+              <div style="color:${INK};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">How to log in</div>
+              <div style="color:${SOFT};font-size:13px;line-height:1.8;">
+                1. Click the button above or go to <b>${f.portal}</b><br>
+                2. Sign in with <b>${f.email||'your email address'}</b><br>
+                3. First time? Click <b>"Forgot password?"</b> to set your own password
+              </div>
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>
     <tr><td style="padding:24px 34px 30px;">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:${INK};border-radius:16px;">
         <tr><td style="padding:24px 22px;text-align:center;">
