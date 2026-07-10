@@ -376,7 +376,11 @@ ${f.revisions ? `<tr><td class="lbl">Rounds of Revisions</td><td>${esc(f.revisio
 }
 
 function refreshPreview(){
-    $('previewFrame').srcdoc = buildContract(fields());
+    const frame = $('previewFrame');
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    doc.open();
+    doc.write(buildContract(fields()));
+    doc.close();
 }
 
 $('printBtn').onclick = () => {
@@ -389,8 +393,9 @@ $('printBtn').onclick = () => {
 
 $('previewBtn').onclick = refreshPreview;
 
-['cClient','cShootType','cDate','cTime','cLocation','cDuration','cPackage','cAddons','cDelivery','cTotal','cDeposit','cBalanceBy','cRevisions']
-    .forEach(id => $(id) && $(id).addEventListener('input', refreshPreview));
+/* refresh on any input or change in the form */
+document.querySelector('.panel').addEventListener('input', refreshPreview);
+document.querySelector('.panel').addEventListener('change', refreshPreview);
 
 // prefill from URL params
 (function(){
