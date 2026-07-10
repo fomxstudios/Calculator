@@ -14,11 +14,11 @@
     --radius-pill:999px; --radius-card:20px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:60px;overflow-x:hidden;}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;padding-bottom:60px;overflow-x:hidden;}
 img{display:block;max-width:100%;}
 a{color:inherit;text-decoration:none;}
 button{font-family:inherit;}
-.wrap{max-width:var(--container);margin:0 auto;padding:0 var(--gutter);}
+.wrap{max-width:var(--container);margin:0 auto;padding:0 var(--gutter);min-width:0;overflow-x:hidden;}
 .eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:10px;}
 
 /* nav + hamburger */
@@ -60,7 +60,7 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 .page-head p{color:var(--ink-soft);font-size:14px;margin-top:4px;}
 .grid{display:grid;grid-template-columns:0.85fr 1.15fr;gap:22px;align-items:start;}
 @media(max-width:900px){.grid{grid-template-columns:1fr;}}
-.panel{background:var(--bg-pill);border:1px solid var(--line);border-radius:var(--radius-card);padding:22px;}
+.panel{background:var(--bg-pill);border:1px solid var(--line);border-radius:var(--radius-card);padding:22px;min-width:0;overflow:hidden;}
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:700;margin-bottom:16px;}
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;}
@@ -380,6 +380,17 @@ function buildEmailHtml(){
       <img src="https://www.fomstudios.co.za/assets/mascot.png" alt="" width="74" style="width:74px;height:auto;display:inline-block;">
       <div style="color:${SOFT};font-size:14px;line-height:1.6;margin-top:12px;">Thank you for choosing FOM Studios — it was a pleasure working with you. We hope you love your content!</div>
       <div style="color:${INK};font-size:14px;font-weight:800;margin-top:12px;">— The FOM Studios Team</div>
+    </td></tr>
+    <!-- Google Review CTA -->
+    <tr><td style="padding:0 34px 4px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f6f2;border:1px solid #e6e4dd;border-radius:16px;">
+        <tr><td style="padding:22px 24px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:8px;">⭐️⭐️⭐️⭐️⭐️</div>
+          <div style="color:${INK};font-size:15px;font-weight:800;margin-bottom:6px;">Enjoyed your experience?</div>
+          <div style="color:${SOFT};font-size:13.5px;margin-bottom:16px;">A quick Google review means the world to us and helps other clients find FOM Studios.</div>
+          <a href="https://g.page/r/Ce2IImiTcNgCEBM/review" target="_blank" style="display:inline-block;background:${A};color:#ffffff;text-decoration:none;border-radius:999px;padding:13px 28px;font-size:14px;font-weight:700;">Leave a Google Review</a>
+        </td></tr>
+      </table>
     </td></tr>
     <tr><td style="padding:24px 34px 30px;">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:${INK};border-radius:16px;">
