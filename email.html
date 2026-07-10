@@ -64,7 +64,8 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:700;margin-bottom:16px;}
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;}
-input[type=text],input[type=email],input[type=number],input[type=date],input[type=time],select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff;-webkit-appearance:none;appearance:none;}
+input[type=text],input[type=email],input[type=number],input[type=date],input[type=time]{width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff;}
+select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 40px 11px 13px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236f6f6d' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer;}
 /* iOS: date/time pickers otherwise ignore width and overflow their box */
 input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;display:block;}
 input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left;margin:0;}
@@ -79,7 +80,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
 .btn.ghost:hover{background:var(--ink);color:var(--bg-pill);}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
 .actions .btn{flex:1;min-width:140px;text-align:center;}
-@media(max-width:480px){.actions{flex-direction:column;}.actions .btn{width:100%;flex:none;}}
+@media(max-width:480px){.actions{flex-direction:column;}.actions .btn{width:100%;flex:none;}.panel{padding:14px 12px;}select,input[type=text],input[type=email],input[type=number],input[type=date],input[type=time]{font-size:16px;}}
 .howto{font-size:12.5px;color:var(--ink-soft);margin-top:14px;line-height:1.7;}
 .howto b{color:var(--ink);}
 .preview-wrap{background:#e9e7e1;border:1px solid var(--line);border-radius:var(--radius-card);padding:18px;overflow-x:auto;max-width:100%;}
