@@ -108,7 +108,8 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
         <li><a href="dashboard.html">Dashboard</a></li>
         <li><a href="database.html">Database</a></li>
         <li><a href="index.html">Price Calculator</a></li>
-        <li><a href="email.html">Confirmation Email</a></li>
+        <li><a href="email.html">Email</a></li>
+        <li><a href="contract.html">Contract</a></li>
     </ul>
     <div class="menu-media"><img src="assets/mascot.png" alt="FOM Studios mascot"></div>
 </div>
@@ -123,6 +124,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
                 <li><a href="database.html">Database</a></li>
                 <li><a href="index.html">Calculator</a></li>
                 <li><a href="email.html" class="active">Email</a></li>
+                <li><a href="contract.html">Contract</a></li>
             </ul>
             <button class="nav-cta" id="logoutBtn" style="display:none;">Log out</button>
         </div>
@@ -132,7 +134,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
 <div class="page wrap">
     <div class="page-head">
         <span class="eyebrow">Admin</span>
-        <h1>Confirmation Email</h1>
+        <h1 id="pageTitle">Confirmation Email</h1>
         <p>Fill in the booking, then copy it into a Gmail from your FOM account and send.</p>
     </div>
 
@@ -140,6 +142,12 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
         <!-- FORM -->
         <div class="panel">
             <h2>Booking details</h2>
+            <div class="field"><label for="fType">Email type</label>
+                <select id="fType">
+                    <option value="confirmation">Booking Confirmation</option>
+                    <option value="ready">Files Ready</option>
+                </select>
+            </div>
             <div class="field"><label for="fName">Customer name</label><input type="text" id="fName" placeholder="Jane Doe"></div>
             <div class="field"><label for="fEmail">Customer email</label><input type="email" id="fEmail" placeholder="jane@email.com"></div>
             <div class="field"><label for="fPkg">Package / service</label><input type="text" id="fPkg" placeholder="Gold — Photography & Videography"></div>
@@ -153,10 +161,11 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
                 <div class="field"><label for="fPaid">Amount paid (R)</label><input type="number" id="fPaid" min="0" step="50" value="0"></div>
             </div>
             <div class="field" id="dueWrap"><label for="fDue">Balance due before</label><input type="date" id="fDue"></div>
+            <div class="field" id="portalWrap" style="display:none;"><label for="fPortal">Client portal URL</label><input type="text" id="fPortal" value="https://www.fomstudios.co.za/client-portal.html" placeholder="https://www.fomstudios.co.za/client-portal.html"></div>
 
             <div class="actions">
                 <button class="btn" id="copyBtn">Copy email</button>
-                <button class="btn ghost" id="gmailBtn">Open Gmail</button>
+                <button class="btn ghost" id="gmailBtn">Open email</button>
                 <button class="btn ghost" id="icsBtn">Download .ics</button>
             </div>
             <div class="howto">
@@ -196,9 +205,11 @@ function fields(){
   const total = +$('fTotal').value||0, paid = +$('fPaid').value||0;
   const balance = Math.max(0, total - paid);
   return {
+    type: $('fType').value,
     name: $('fName').value.trim(), email: $('fEmail').value.trim(),
     pkg: $('fPkg').value.trim(), date: $('fDate').value, time: $('fTime').value,
     loc: $('fLoc').value.trim(), total, paid, balance, due: $('fDue').value,
+    portal: $('fPortal').value.trim() || 'https://www.fomstudios.co.za/client-portal.html',
     full: balance <= 0,
   };
 }
@@ -246,6 +257,131 @@ function icsText(f){
 
 /* ---------- the themed HTML email (table-based + inline styles for Gmail) ---------- */
 function buildEmailHtml(){
+  const f = fields();
+  const isReady = f.type === 'ready';
+  const A='#02367B', A2='#5B9AE0', INK='#2a2b2c', SOFT='#6f6f6d', BG='#f1f0ec', LINE='#e6e4dd', CARD='#f7f6f2';
+  const row = (k,v)=> v ? `<tr><td style="padding:9px 2px;color:${SOFT};font-size:14px;border-bottom:1px solid ${LINE};">${k}</td><td style="padding:9px 2px;color:${INK};font-size:14px;font-weight:700;text-align:right;border-bottom:1px solid ${LINE};">${v}</td></tr>` : '';
+  const payBlock = f.full
+    ? `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef4ee;border:1px solid #cfe0d3;border-radius:14px;"><tr><td style="padding:16px 18px;color:#256b3d;font-size:14px;font-weight:700;">&#10003;&nbsp; Paid in full — no further payment required.</td></tr></table>`
+    : `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef2fb;border:1px solid #bcd4f5;border-radius:14px;"><tr><td style="padding:16px 18px;color:${A};font-size:14px;line-height:1.7;">Amount paid: <b>${RZA(f.paid)}</b><br>Remaining balance: <b>${RZA(f.balance)}</b>${f.due?` — due before <b>${niceDate(f.due)}</b>`:''}</td></tr></table>`;
+  const cal = eventTimes(f) ? `<tr><td align="center" style="padding:22px 0 4px;"><a href="${gcalUrl(f)}" target="_blank" style="display:inline-block;background:${A};color:#ffffff;text-decoration:none;border-radius:999px;padding:15px 34px;font-size:14px;font-weight:700;letter-spacing:.02em;">&#43;&nbsp; Add to Calendar</a></td></tr>` : '';
+
+  /* ---- CONFIRMATION EMAIL ---- */
+  if(!isReady) return `
+<table width="100%" cellpadding="0" cellspacing="0" style="background:${BG};padding:26px 12px;font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;">
+ <tr><td align="center">
+  <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;">
+    <tr><td style="background:${INK};padding:40px 34px 34px;text-align:center;">
+      <div style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:4px;">FOM STUDIOS</div>
+      <div style="width:46px;height:3px;background:${A2};border-radius:3px;margin:16px auto;line-height:3px;font-size:0;">&nbsp;</div>
+      <div style="color:${A2};font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">Booking Confirmed</div>
+      <div style="color:#ffffff;font-size:30px;font-weight:800;margin-top:10px;line-height:1.15;">You're booked in! 🎉</div>
+    </td></tr>
+    <tr><td style="padding:28px 34px 0;color:${INK};font-size:15px;line-height:1.6;">
+      Hi ${f.name||'there'},<br><br>
+      Thank you — your booking with <b>FOM Studios</b> is confirmed. Here are your details:
+    </td></tr>
+    <tr><td style="padding:16px 34px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:${CARD};border:1px solid ${LINE};border-radius:16px;">
+        <tr><td style="padding:8px 20px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${row('Package', f.pkg)}
+            ${row('Date', niceDate(f.date))}
+            ${row('Time', f.time)}
+            ${row('Location', f.loc)}
+            <tr><td style="padding:11px 2px;color:${INK};font-size:15px;font-weight:800;">Total</td><td style="padding:11px 2px;color:${INK};font-size:15px;font-weight:800;text-align:right;">${RZA(f.total)}</td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>
+    <tr><td style="padding:16px 34px 0;">${payBlock}</td></tr>
+    <tr><td style="padding:0 34px;"><table width="100%" cellpadding="0" cellspacing="0">${cal}</table></td></tr>
+    <tr><td align="center" style="padding:28px 34px 4px;">
+      <img src="https://www.fomstudios.co.za/assets/mascot.png" alt="" width="74" style="width:74px;height:auto;display:inline-block;">
+      <div style="color:${SOFT};font-size:14px;line-height:1.6;margin-top:12px;">We can't wait to capture your shoot. If anything changes, just reply to this email.</div>
+      <div style="color:${INK};font-size:14px;font-weight:800;margin-top:12px;">— The FOM Studios Team</div>
+    </td></tr>
+    <tr><td style="padding:24px 34px 30px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:${INK};border-radius:16px;">
+        <tr><td style="padding:24px 22px;text-align:center;">
+          <div style="color:#ffffff;font-weight:800;letter-spacing:2px;font-size:15px;">FOM STUDIOS</div>
+          <div style="color:#b9b8b5;font-size:12.5px;margin-top:6px;">Photography &amp; Videography · Johannesburg, South Africa</div>
+          <div style="margin-top:14px;font-size:13px;">
+            <a href="${BRAND.site}" style="color:${A2};text-decoration:none;">Website</a> &nbsp;·&nbsp;
+            <a href="${BRAND.instagram}" style="color:${A2};text-decoration:none;">Instagram</a> &nbsp;·&nbsp;
+            <a href="mailto:${BRAND.email}" style="color:${A2};text-decoration:none;">Email</a> &nbsp;·&nbsp;
+            <span style="color:#b9b8b5;">${BRAND.phone}</span>
+          </div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+ </td></tr>
+</table>`;
+
+  /* ---- FILES READY EMAIL ---- */
+  return `
+<table width="100%" cellpadding="0" cellspacing="0" style="background:${BG};padding:26px 12px;font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;">
+ <tr><td align="center">
+  <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;">
+    <tr><td style="background:${INK};padding:40px 34px 34px;text-align:center;">
+      <div style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:4px;">FOM STUDIOS</div>
+      <div style="width:46px;height:3px;background:${A2};border-radius:3px;margin:16px auto;line-height:3px;font-size:0;">&nbsp;</div>
+      <div style="color:${A2};font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">Deliverables Ready</div>
+      <div style="color:#ffffff;font-size:30px;font-weight:800;margin-top:10px;line-height:1.15;">Your files are ready! 🎬</div>
+    </td></tr>
+    <tr><td style="padding:28px 34px 0;color:${INK};font-size:15px;line-height:1.6;">
+      Hi ${f.name||'there'},<br><br>
+      Great news — your edited ${f.pkg ? `<b>${f.pkg}</b> ` : ''}files are ready and waiting for you. You can view and download everything through your <b>FOM Studios Client Portal</b>.
+    </td></tr>
+    <!-- portal CTA -->
+    <tr><td style="padding:22px 34px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef2fb;border:1px solid #bcd4f5;border-radius:16px;">
+        <tr><td style="padding:26px 28px;text-align:center;">
+          <div style="color:${INK};font-size:16px;font-weight:800;margin-bottom:6px;">Access your Client Portal</div>
+          <div style="color:${SOFT};font-size:13.5px;margin-bottom:18px;">Sign in to view your photos${f.pkg&&(f.pkg.toLowerCase().includes('video')||f.pkg.toLowerCase().includes('reel'))?'/videos':''}, download your files, and check your booking details.</div>
+          <a href="${f.portal}" target="_blank" style="display:inline-block;background:${A};color:#ffffff;text-decoration:none;border-radius:999px;padding:15px 34px;font-size:14px;font-weight:700;letter-spacing:.02em;">Go to Client Portal</a>
+          <div style="color:#9a9895;font-size:12px;margin-top:10px;">${f.portal}</div>
+        </td></tr>
+      </table>
+    </td></tr>
+    <!-- how to login -->
+    <tr><td style="padding:16px 34px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:${CARD};border:1px solid ${LINE};border-radius:16px;">
+        <tr><td style="padding:18px 22px;">
+          <div style="color:${INK};font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">How to access your files</div>
+          <div style="color:${SOFT};font-size:14px;line-height:1.8;">
+            1. Click the button above or go to <b>${f.portal}</b><br>
+            2. Sign in with <b>${f.email||'your email address'}</b><br>
+            3. If it's your first time, click <b>"Forgot password?"</b> to set your own password<br>
+            4. Open your booking and click <b>"Download files"</b>
+          </div>
+        </td></tr>
+      </table>
+    </td></tr>
+    <tr><td align="center" style="padding:28px 34px 4px;">
+      <img src="https://www.fomstudios.co.za/assets/mascot.png" alt="" width="74" style="width:74px;height:auto;display:inline-block;">
+      <div style="color:${SOFT};font-size:14px;line-height:1.6;margin-top:12px;">Thank you for choosing FOM Studios — it was a pleasure working with you. We hope you love your content!</div>
+      <div style="color:${INK};font-size:14px;font-weight:800;margin-top:12px;">— The FOM Studios Team</div>
+    </td></tr>
+    <tr><td style="padding:24px 34px 30px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:${INK};border-radius:16px;">
+        <tr><td style="padding:24px 22px;text-align:center;">
+          <div style="color:#ffffff;font-weight:800;letter-spacing:2px;font-size:15px;">FOM STUDIOS</div>
+          <div style="color:#b9b8b5;font-size:12.5px;margin-top:6px;">Photography &amp; Videography · Johannesburg, South Africa</div>
+          <div style="margin-top:14px;font-size:13px;">
+            <a href="${BRAND.site}" style="color:${A2};text-decoration:none;">Website</a> &nbsp;·&nbsp;
+            <a href="${BRAND.instagram}" style="color:${A2};text-decoration:none;">Instagram</a> &nbsp;·&nbsp;
+            <a href="mailto:${BRAND.email}" style="color:${A2};text-decoration:none;">Email</a> &nbsp;·&nbsp;
+            <span style="color:#b9b8b5;">${BRAND.phone}</span>
+          </div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+ </td></tr>
+</table>`;
+}
   const f = fields();
   const A='#02367B', A2='#5B9AE0', INK='#2a2b2c', SOFT='#6f6f6d', BG='#f1f0ec', LINE='#e6e4dd', CARD='#f7f6f2';
   const row = (k,v)=> v ? `<tr><td style="padding:9px 2px;color:${SOFT};font-size:14px;border-bottom:1px solid ${LINE};">${k}</td><td style="padding:9px 2px;color:${INK};font-size:14px;font-weight:700;text-align:right;border-bottom:1px solid ${LINE};">${v}</td></tr>` : '';
@@ -315,6 +451,14 @@ function buildEmailHtml(){
 }
 function plainText(){
   const f = fields();
+  if(f.type === 'ready'){
+    return `Hi ${f.name||'there'},\n\nYour FOM Studios files are ready!\n\n`
+      + `Log in to your Client Portal to view and download your content:\n${f.portal}\n\n`
+      + `If it's your first time logging in, click "Forgot password?" on the login screen to set your own password.\n`
+      + `Sign in with: ${f.email||'your email address'}\n\n`
+      + `Thank you for choosing FOM Studios — it was a pleasure!\n\n`
+      + `— FOM Studios\nwww.fomstudios.co.za · ${BRAND.instaHandle} · ${BRAND.email} · ${BRAND.phone}`;
+  }
   let t = `Hi ${f.name||'there'},\n\nYour booking with FOM Studios is confirmed.\n\n`;
   if(f.pkg) t+=`Package: ${f.pkg}\n`;
   if(f.date) t+=`Date: ${niceDate(f.date)}\n`;
@@ -327,10 +471,15 @@ function plainText(){
 }
 
 function refresh(){
+  const f = fields();
+  const isReady = f.type === 'ready';
+  $('pageTitle').textContent = isReady ? 'Files Ready Email' : 'Confirmation Email';
+  $('dueWrap').style.display = (f.full || isReady) ? 'none' : 'block';
+  $('portalWrap').style.display = isReady ? 'block' : 'none';
   $('preview').innerHTML = buildEmailHtml();
-  $('dueWrap').style.display = fields().full ? 'none' : 'block';
 }
-['fName','fEmail','fPkg','fDate','fTime','fLoc','fTotal','fPaid','fDue'].forEach(id=>$(id).addEventListener('input', refresh));
+['fType','fName','fEmail','fPkg','fDate','fTime','fLoc','fTotal','fPaid','fDue','fPortal'].forEach(id=>$(id) && $(id).addEventListener('input', refresh));
+$('fType').addEventListener('change', refresh);
 
 /* actions */
 let toastT;
@@ -353,9 +502,12 @@ $('copyBtn').onclick = async () => {
 };
 $('gmailBtn').onclick = () => {
   const f = fields();
+  const subject = f.type === 'ready'
+    ? 'Your FOM Studios files are ready to download'
+    : 'Your FOM Studios booking is confirmed';
   const url = 'https://mail.google.com/mail/?view=cm&fs=1'
     + '&to=' + encodeURIComponent(f.email)
-    + '&su=' + encodeURIComponent('Your FOM Studios booking is confirmed');
+    + '&su=' + encodeURIComponent(subject);
   window.open(url, '_blank');
 };
 $('icsBtn').onclick = () => {
