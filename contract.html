@@ -73,10 +73,13 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
 .toast.show{opacity:1;}
 #contractDoc{display:none;}
 @media print{
-    body *{visibility:hidden;}
-    #contractDoc,#contractDoc *{visibility:visible;}
-    #contractDoc{display:block !important;position:fixed;top:0;left:0;width:100%;}
-    @page{margin:15mm 12mm;size:A4;}
+    /* hide every element on the page */
+    body{ padding:0 !important; margin:0 !important; background:#fff !important; }
+    body > *{ display:none !important; }
+    /* show only the contract doc */
+    #contractDoc{ display:block !important; position:static !important; }
+    #contractDoc *{ visibility:visible !important; }
+    @page{ margin:14mm 12mm; size:A4; }
 }
 @media(max-width:860px){nav.pill .nav-links{display:none;}.nav-shell{padding:14px var(--gutter) 0;}}
 @media(max-width:560px){.row2{grid-template-columns:1fr;}}
