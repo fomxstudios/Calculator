@@ -74,13 +74,8 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
 .toast.show{opacity:1;}
 #contractDoc{display:none;}
 @media print{
-    /* hide every element on the page */
-    body{ padding:0 !important; margin:0 !important; background:#fff !important; }
+    /* when printing from the main page (not the iframe), hide everything */
     body > *{ display:none !important; }
-    /* show only the contract doc */
-    #contractDoc{ display:block !important; position:static !important; }
-    #contractDoc *{ visibility:visible !important; }
-    @page{ margin:14mm 12mm; size:A4; }
 }
 @media(max-width:860px){nav.pill .nav-links{display:none;}.nav-shell{padding:14px var(--gutter) 0;}}
 @media(max-width:560px){.row2{grid-template-columns:1fr;}}
@@ -388,11 +383,13 @@ function refreshPreview(){
 }
 
 $('printBtn').onclick = () => {
-    // Write just the inner body content into #contractDoc for print CSS
-    const html = buildContract(fields());
-    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-    $('contractDoc').innerHTML = bodyMatch ? bodyMatch[1] : html;
-    setTimeout(() => window.print(), 100);
+    // Always refresh preview first so iframe has latest content, then print it
+    refreshPreview();
+    setTimeout(() => {
+        const frame = $('previewFrame');
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+    }, 300);
 };
 
 $('previewBtn').onclick = refreshPreview;
