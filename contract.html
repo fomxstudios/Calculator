@@ -151,6 +151,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
             </div>
             <div class="field"><label for="cBalanceBy">Balance payable by</label><input type="date" id="cBalanceBy"></div>
             <div class="field"><label for="cRevisions">Rounds of revisions</label><input type="text" id="cRevisions" placeholder="e.g. 2 rounds"></div>
+            <div class="field"><label for="cEditRate">Additional edit rate (R)</label><input type="number" id="cEditRate" min="0" step="50" value="300"></div>
 
             <div class="actions">
                 <button class="btn" id="printBtn">Save as PDF</button>
@@ -200,6 +201,7 @@ function fields(){
         deposit:   +$('cDeposit').value||0,
         balanceBy: $('cBalanceBy').value,
         revisions: $('cRevisions').value.trim(),
+        editRate:  +$('cEditRate').value||300,
     };
 }
 
@@ -245,79 +247,129 @@ table.st .lbl{font-weight:700;width:42%;}
 <div class="subtitle">This Agreement is entered into between <strong>FOM Studios</strong> ("Service Provider") and the undersigned <strong>Client</strong>.</div>
 
 <h2>1. Services</h2>
-<p>FOM Studios agrees to provide photography and/or videography services as agreed, including shooting, editing, and delivery of final media.</p>
+<p>FOM Studios agrees to provide photography and/or videography services as agreed upon with the Client, including but not limited to shooting, editing, and delivery of final media.</p>
 
 <h2>2. Booking &amp; Payment Terms</h2>
 <ul>
 <li>A <strong>50% non-refundable deposit</strong> is required to secure the booking date.</li>
-<li>The <strong>remaining balance must be paid in full prior to the shoot date</strong>.</li>
+<li>The remaining <strong>50% must be paid in full prior to the shoot date</strong>.</li>
 <li><strong>No services will be rendered unless full payment has been received.</strong></li>
 <li>Payment confirms the booking and acceptance of this agreement.</li>
 </ul>
 
 <h2>3. Cancellation Policy</h2>
 <ul>
-<li>The 50% deposit is strictly <strong>non-refundable</strong>.</li>
-<li>Cancellations <strong>10+ days</strong> prior to the shoot — no further payment due.</li>
-<li>Cancellations <strong>under 10 days</strong> prior — additional fee of 20% of the outstanding balance.</li>
-<li>All cancellations must be submitted in writing.</li>
+<li>The 50% booking deposit is strictly <strong>non-refundable</strong> and secures the scheduled date and services of FOM Studios.</li>
+<li>In the event that the Client cancels the booking <strong>10 (ten) days</strong> or more prior to the scheduled shoot date, no further payment shall be due beyond the deposit already paid.</li>
+<li>In the event that the Client cancels the booking less than <strong>10 (ten) days</strong> prior to the scheduled shoot date, the Client shall remain <strong>liable</strong> for an additional fee equal to 20% of the outstanding balance (being 20% of the remaining 50% of the total fee).</li>
+<li>Any cancellation must be submitted in writing to be considered valid.</li>
 </ul>
 
 <h2>4. Rescheduling Policy</h2>
 <ul>
-<li>One (1) reschedule permitted per booking. Further changes treated as cancellation.</li>
-<li>All payments transfer to the new date, subject to FOM Studios' availability.</li>
-<li>Rescheduling requests must be in writing.</li>
+<li>The Client may request to reschedule the shoot; however, no refunds will be issued under any rescheduling circumstances.</li>
+<li>Only one (1) reschedule request will be permitted per booking. Any further changes will be treated as a cancellation and Clause 3 (Cancellation Policy) will apply.</li>
+<li>Where a reschedule is approved, all payments made will be transferred to the new agreed date, subject to FOM Studios' availability.</li>
+<li>Rescheduling requests must be submitted in writing and are strictly subject to availability.</li>
 </ul>
 
 <h2>5. Weather &amp; Unforeseen Circumstances</h2>
 <ul>
-<li>Adverse weather: shoot rescheduled at no additional cost, subject to availability.</li>
-<li>FOM Studios reserves the right to determine if conditions are unsuitable.</li>
+<li>In the event of adverse weather conditions or natural causes that prevent the shoot from proceeding:
+  <ul style="margin-top:4px;">
+    <li>The shoot will be rescheduled at no additional cost to the Client, subject to availability.</li>
+    <li>If rescheduling is not possible, a mutually agreed refund or credit may be issued.</li>
+  </ul>
+</li>
+<li>FOM Studios reserves the right to determine whether conditions are unsuitable for shooting.</li>
 </ul>
 
 <h2>6. Drone Operation</h2>
 <ul>
-<li>Drone services (if included) are subject to weather and legal flight restrictions.</li>
-<li>If drone operations cannot be performed, the drone portion will be refunded or excluded from the invoice.</li>
+<li>Drone services (if included in the agreed package) are strictly subject to weather conditions and legal flight restrictions.</li>
+<li>FOM Studios reserves the right to determine whether conditions are safe and suitable for drone operation, including but not limited to wind speed, rain, visibility, and airspace restrictions.</li>
+<li>If drone operations cannot be performed due to weather or safety concerns, they will either be rescheduled (subject to availability) or cancelled.</li>
+<li>In the event that drone services cannot be performed due to weather, safety concerns, or regulatory restrictions beyond the control of FOM Studios, the drone portion of the service will be refunded to the Client or alternatively excluded from the final invoice.</li>
+<li>All drone operations will be conducted in full compliance with applicable aviation laws and safety requirements.</li>
 </ul>
 
 <h2>7. Client Non-Attendance</h2>
-<p>If the Client fails to attend without prior notice, no refund will be issued and the booking is considered fulfilled.</p>
+<ul>
+<li>If the Client fails to attend the scheduled shoot without prior notice:
+  <ul style="margin-top:4px;">
+    <li>No refund will be issued.</li>
+    <li>The booking will be considered fulfilled.</li>
+  </ul>
+</li>
+</ul>
 
 <h2>8. Overtime Fees</h2>
-<p>Time exceeding the agreed duration will be charged at 1.5&times; the hourly rate per hour (or part thereof), approved by the Client during the shoot.</p>
+<ul>
+<li>Any time exceeding the agreed shooting duration will be charged at 1.5 times the hourly rate per hour (or part thereof).</li>
+<li>Overtime must be approved by the Client during the shoot.</li>
+</ul>
 
 <h2>9. Delivery of Content</h2>
 <ul>
-<li>Final content delivered via agreed platforms (e.g., Google Drive).</li>
-<li>Rush delivery: +20% fee, subject to availability.</li>
-<li>Raw files not included unless explicitly agreed.</li>
+<li>Delivery timelines will be communicated prior to or at the time of booking.</li>
+<li>Should the Client request expedited editing and delivery outside of the standard turnaround time, a rush fee of 20% of the total project value will be applied.</li>
+<li>Rush delivery is subject to FOM Studios' availability and workload capacity at the time of request. Approval is not guaranteed and must be confirmed in writing by FOM Studios.</li>
+<li>Final edited photos/videos will be delivered via agreed platforms (e.g., Google Drive, WeTransfer).</li>
+<li>Raw footage/images are not included unless explicitly agreed upon in writing.</li>
 </ul>
 
 <h2>10. Travel &amp; Parking Fees</h2>
-<p>The Client is responsible for all reasonable parking and travel costs incurred by FOM Studios, reimbursed at actual cost unless otherwise agreed.</p>
+<ul>
+<li>Where the shoot location requires paid parking, security-controlled parking, or any form of parking fees, the Client shall be responsible for covering all reasonable parking costs incurred by FOM Studios.</li>
+<li>Parking fees will be reimbursed at actual cost, unless otherwise agreed in writing prior to the shoot date.</li>
+<li>FOM Studios will, where possible, provide proof of parking expenses upon request.</li>
+</ul>
 
 <h2>11. Revisions &amp; Additional Edits</h2>
 <ul>
-<li>Client is entitled to ${val(f.revisions,'[revisions]')} as agreed.</li>
-<li>Additional edits beyond this: <strong>R300.00 per edit/change</strong>.</li>
+<li>The Client is entitled to ${val(f.revisions,'[revisions]')} of revisions as agreed prior to booking.</li>
+<li>Any additional edits beyond this will be charged at <strong>${RZA(f.editRate)} per edit/change</strong>.</li>
 </ul>
 
 <h2>12. Creative Control</h2>
-<p>FOM Studios retains full creative control over style, editing, and final output. No re-edits after delivery except for technical faults. Additional editing requests charged separately.</p>
+<ul>
+<li>FOM Studios retains full creative control over the style, editing, and final output.</li>
+<li>The Client acknowledges that final results may vary based on conditions and artistic interpretation.</li>
+<li>All photographs will be edited in accordance with the established FOM Studios editing style, presets, and creative direction. The Client acknowledges and agrees that this editing style forms part of the artistic identity of FOM Studios.</li>
+<li>No revisions or re-edits will be permitted for photographs once the final images have been delivered, except where images are technically faulty or incorrect due to error by FOM Studios.</li>
+<li>Any additional or alternative editing requests will be treated as a separate service and charged accordingly, subject to availability.</li>
+</ul>
 
 <h2>13. Usage Rights &amp; Promotion</h2>
-<p>FOM Studios may use produced content for portfolio, social media, and marketing unless the Client specifies confidentiality in writing prior to the shoot.</p>
+<ul>
+<li>FOM Studios retains the right to use all produced content for portfolio, social media, and marketing purposes.</li>
+<li>This applies unless the Client specifies confidentiality in writing prior to the shoot.</li>
+</ul>
 
 <h2>14. Client Responsibilities</h2>
-<ul><li>Punctuality</li><li>Accurate shoot details</li><li>Permissions for locations</li></ul>
+<ul>
+<li>The Client is responsible for:
+  <ul style="margin-top:4px;">
+    <li>Ensuring punctuality at the agreed shoot time and location.</li>
+    <li>Providing accurate and complete shoot details prior to the booking.</li>
+    <li>Obtaining any necessary permits or permissions for the chosen shoot location.</li>
+  </ul>
+</li>
+</ul>
 
 <h2>15. Liability</h2>
-<p>FOM Studios is not liable for missed shots beyond control, equipment failure, or external disruptions during the shoot.</p>
+<ul>
+<li>FOM Studios will not be held liable for:
+  <ul style="margin-top:4px;">
+    <li>Missed shots due to circumstances beyond reasonable control.</li>
+    <li>Equipment failure, though all reasonable precautions are taken.</li>
+    <li>External disruptions during the shoot.</li>
+  </ul>
+</li>
+</ul>
 
 <h2>16. Force Majeure</h2>
-<p>FOM Studios is not liable for failure to perform due to events beyond control (natural disasters, government restrictions, illness/emergency). Rescheduling or alternative arrangements will be discussed where applicable.</p>
+<p>FOM Studios shall not be liable for failure to perform due to events beyond its reasonable control, including but not limited to natural disasters, government restrictions, illness, or emergencies. In the event that FOM Studios is unable to attend or complete a scheduled shoot due to illness or emergency, the Client will be notified as soon as reasonably possible and the booking will be rescheduled to the next mutually available date. Where rescheduling is not possible, alternative arrangements will be discussed between both parties.</p>
 
 <h2>Service Summary &amp; Payment Details</h2>
 <table class="st">
