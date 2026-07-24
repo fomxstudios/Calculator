@@ -357,6 +357,24 @@ textarea{ width:100%; min-width:0; max-width:100%; box-sizing:border-box; border
                 <input type="text" id="promoCode" placeholder="e.g. FOMGIVEAWAY10" style="text-transform:uppercase;">
                 <div id="promoMsg" style="font-size:12.5px; margin-top:4px; min-height:16px;"></div>
             </div>
+            <div class="row2">
+                <div class="field">
+                    <label for="discType">Manual discount</label>
+                    <select id="discType">
+                        <option value="none">No discount</option>
+                        <option value="percent">Percentage (%)</option>
+                        <option value="flat">Flat amount (R)</option>
+                    </select>
+                </div>
+                <div class="field" id="discValueField" style="display:none;">
+                    <label for="discValue">Value</label>
+                    <input type="number" id="discValue" min="0" step="1" value="0">
+                </div>
+            </div>
+            <div class="field" id="discLabelField" style="display:none;">
+                <label for="discLabel">Label (shown on invoice)</label>
+                <input type="text" id="discLabel" placeholder="e.g. Friends &amp; family discount">
+            </div>
 
             <h2 class="mt">Invoice details (for PDF)</h2>
             <div class="field">
@@ -630,6 +648,18 @@ function applyPromo(amount, promo){
   return amount;
 }
 
+/* Reads the manual discount fields (type + value + optional label).
+   Returns an object shaped the same as a promo code, so it can be
+   passed straight into applyPromo() — or null if none is set. */
+function getManualDiscount(){
+  const type = $('discType').value;
+  const value = parseFloat($('discValue').value) || 0;
+  if(type === 'none' || value <= 0) return null;
+  const label = $('discLabel').value.trim() ||
+    (type === 'percent' ? `Discount (${value}%)` : 'Discount');
+  return { type, value, label };
+}
+
 const MASCOT = {
   Bronze: "assets/mascot-head-bronze.jpg",
   Silver: "assets/mascot-head-silver.jpg",
@@ -828,6 +858,14 @@ function render(){
     grand = discounted;
   }
 
+  const manualDisc = getManualDiscount();
+  if(manualDisc){
+    const discounted = applyPromo(grand, manualDisc);
+    const discAmt = grand - discounted;
+    if(discAmt > 0) body.appendChild(simpleRow(manualDisc.label, -discAmt, 'saving'));
+    grand = discounted;
+  }
+
   document.getElementById('tpLbl').textContent = isCustom ? 'Quote total' : 'Total';
   document.getElementById('tpAmt').textContent = RZA(grand);
   // "Excluding transport" caption only when no transport added
@@ -920,6 +958,18 @@ function buildInvoice(){
     }
     total = discounted;
   }
+
+  const invManualDisc = getManualDiscount();
+  if(invManualDisc){
+    const discounted = applyPromo(total, invManualDisc);
+    const discAmt = total - discounted;
+    if(discAmt > 0){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="it">${invManualDisc.label}</td><td></td><td></td><td class="r">−${RZA(discAmt)}</td>`;
+      body.appendChild(tr);
+    }
+    total = discounted;
+  }
   document.getElementById('psSubtotal').textContent = RZA(total);
 
   if(PAY.mode === 'balance'){
@@ -990,6 +1040,14 @@ $('overtime').addEventListener('change', e => {
 $('otHours').addEventListener('input', e => { state.overtime.hours = Math.max(0, parseFloat(e.target.value)||0); render(); });
 $('rush').addEventListener('change', e => { state.rush.on = e.target.value === 'yes'; render(); });
 $('promoCode').addEventListener('input', () => render());
+$('discType').addEventListener('change', () => {
+  const on = $('discType').value !== 'none';
+  $('discValueField').style.display = on ? 'block' : 'none';
+  $('discLabelField').style.display = on ? 'block' : 'none';
+  render();
+});
+$('discValue').addEventListener('input', () => render());
+$('discLabel').addEventListener('input', () => render());
 $('ivBody').addEventListener('click', e => {
   const rm = e.target.getAttribute('data-rm');
   if(rm !== null){ (state.type === 'custom' ? state.custom : state.extras).splice(+rm,1); render(); }
