@@ -240,6 +240,8 @@ textarea{ width:100%; min-width:0; max-width:100%; box-sizing:border-box; border
         <li><a href="dashboard.html">Dashboard</a></li>
         <li><a href="database.html">Database</a></li>
         <li><a href="workflow.html">Workflow</a></li>
+        <li><a href="leads.html">Leads</a></li>
+        <li><a href="content.html">Content Planner</a></li>
         <li><a href="index.html">Calculator</a></li>
         <li><a href="email.html">Email</a></li>
         <li><a href="contract.html">Contract</a></li>
@@ -256,6 +258,8 @@ textarea{ width:100%; min-width:0; max-width:100%; box-sizing:border-box; border
                 <li><a href="dashboard.html">Dashboard</a></li>
                 <li><a href="database.html">Database</a></li>
                 <li><a href="workflow.html">Workflow</a></li>
+                <li><a href="leads.html">Leads</a></li>
+                <li><a href="content.html">Content Planner</a></li>
                 <li><a href="index.html" class="active">Calculator</a></li>
                 <li><a href="email.html">Email</a></li>
                 <li><a href="contract.html">Contract</a></li>
@@ -351,29 +355,6 @@ textarea{ width:100%; min-width:0; max-width:100%; box-sizing:border-box; border
             <div class="field">
                 <label for="rush">Rush fee? (adds 30% to the total)</label>
                 <select id="rush"><option value="no">No</option><option value="yes">Yes</option></select>
-            </div>
-            <div class="field">
-                <label for="promoCode">Promo code (optional)</label>
-                <input type="text" id="promoCode" placeholder="e.g. FOMGIVEAWAY10" style="text-transform:uppercase;">
-                <div id="promoMsg" style="font-size:12.5px; margin-top:4px; min-height:16px;"></div>
-            </div>
-            <div class="row2">
-                <div class="field">
-                    <label for="discType">Manual discount</label>
-                    <select id="discType">
-                        <option value="none">No discount</option>
-                        <option value="percent">Percentage (%)</option>
-                        <option value="flat">Flat amount (R)</option>
-                    </select>
-                </div>
-                <div class="field" id="discValueField" style="display:none;">
-                    <label for="discValue">Value</label>
-                    <input type="number" id="discValue" min="0" step="1" value="0">
-                </div>
-            </div>
-            <div class="field" id="discLabelField" style="display:none;">
-                <label for="discLabel">Label (shown on invoice)</label>
-                <input type="text" id="discLabel" placeholder="e.g. Friends &amp; family discount">
             </div>
 
             <h2 class="mt">Invoice details (for PDF)</h2>
@@ -595,71 +576,6 @@ const PAY = {
 let invoiceTotal = 0;   // set by buildInvoice, used to size the payment links
 let liveTotal = 0;      // current on-screen total, used to prefill the WhatsApp message
 
-/* ===== PROMO CODES =====================================================
-   Add a new code any time by adding a line below — nothing else in the
-   calculator needs to change. Each code can be:
-     type: 'percent'  → value is a % taken off (e.g. 10 = 10% off)
-     type: 'flat'      → value is a flat Rand amount taken off
-   expires (optional): 'YYYY-MM-DD' — after this date the code is
-     automatically rejected, so there's no need to remember to remove it.
-   Codes are matched case-insensitively (FOMGIVEAWAY10 = fomgiveaway10).
-   ========================================================================= */
-const PROMO_CODES = {
-  'FOMGIVEAWAY10': { type: 'percent', value: 10, label: 'Giveaway — 10% off', expires: '2026-09-02' },
-  // Add future codes here, e.g.:
-  // 'REFER15':     { type: 'percent', value: 15, label: 'Referral — 15% off', expires: '2026-12-31' },
-  // 'LOYALTY200':  { type: 'flat',    value: 200, label: 'Loyalty — R200 off' },  // no expiry = never expires
-};
-
-/* Reads whatever's typed in the promo field, validates it against the
-   registry above (including expiry), and shows a status message.
-   Returns the matching promo object, or null if empty/invalid/expired. */
-function getActivePromo(){
-  const input = $('promoCode');
-  const msgEl = $('promoMsg');
-  if(!input || !msgEl) return null;
-  const code = input.value.trim().toUpperCase();
-  if(!code){ msgEl.textContent = ''; return null; }
-
-  const promo = PROMO_CODES[code];
-  if(!promo){
-    msgEl.textContent = 'Code not recognised.';
-    msgEl.style.color = '#c0392b';
-    return null;
-  }
-  if(promo.expires){
-    const today = new Date().toISOString().slice(0,10);
-    if(today > promo.expires){
-      msgEl.textContent = `This code expired on ${fmtDate(promo.expires)}.`;
-      msgEl.style.color = '#c0392b';
-      return null;
-    }
-  }
-  msgEl.textContent = `✓ ${promo.label} applied`;
-  msgEl.style.color = '#27ae60';
-  return promo;
-}
-
-/* Applies a promo object to an amount and returns the discounted total. */
-function applyPromo(amount, promo){
-  if(!promo) return amount;
-  if(promo.type === 'percent') return Math.max(0, Math.round(amount * (1 - promo.value/100)));
-  if(promo.type === 'flat')    return Math.max(0, amount - promo.value);
-  return amount;
-}
-
-/* Reads the manual discount fields (type + value + optional label).
-   Returns an object shaped the same as a promo code, so it can be
-   passed straight into applyPromo() — or null if none is set. */
-function getManualDiscount(){
-  const type = $('discType').value;
-  const value = parseFloat($('discValue').value) || 0;
-  if(type === 'none' || value <= 0) return null;
-  const label = $('discLabel').value.trim() ||
-    (type === 'percent' ? `Discount (${value}%)` : 'Discount');
-  return { type, value, label };
-}
-
 const MASCOT = {
   Bronze: "assets/mascot-head-bronze.jpg",
   Silver: "assets/mascot-head-silver.jpg",
@@ -850,22 +766,6 @@ function render(){
   if(state.overtime.on){ const o = overtimeLine(); grand += o.unit*o.qty; body.appendChild(rowEl(o,null,false)); }
   if(state.rush.on){ const r = L('Rush fee (+30%)', Math.round(grand*0.30), 1); grand += r.unit; body.appendChild(rowEl(r,null,false)); }
 
-  const promo = getActivePromo();
-  if(promo){
-    const discounted = applyPromo(grand, promo);
-    const discAmt = grand - discounted;
-    if(discAmt > 0) body.appendChild(simpleRow(`Promo: ${promo.label}`, -discAmt, 'saving'));
-    grand = discounted;
-  }
-
-  const manualDisc = getManualDiscount();
-  if(manualDisc){
-    const discounted = applyPromo(grand, manualDisc);
-    const discAmt = grand - discounted;
-    if(discAmt > 0) body.appendChild(simpleRow(manualDisc.label, -discAmt, 'saving'));
-    grand = discounted;
-  }
-
   document.getElementById('tpLbl').textContent = isCustom ? 'Quote total' : 'Total';
   document.getElementById('tpAmt').textContent = RZA(grand);
   // "Excluding transport" caption only when no transport added
@@ -947,31 +847,7 @@ function buildInvoice(){
     tr.innerHTML = `<td>&nbsp;</td><td></td><td></td><td class="r">R0,00</td>`;
     body.appendChild(tr);
   }
-  const invPromo = getActivePromo();
-  if(invPromo){
-    const discounted = applyPromo(total, invPromo);
-    const discAmt = total - discounted;
-    if(discAmt > 0){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td class="it">Promo: ${invPromo.label}</td><td></td><td></td><td class="r">−${RZA(discAmt)}</td>`;
-      body.appendChild(tr);
-    }
-    total = discounted;
-  }
-
-  const invManualDisc = getManualDiscount();
-  if(invManualDisc){
-    const discounted = applyPromo(total, invManualDisc);
-    const discAmt = total - discounted;
-    if(discAmt > 0){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td class="it">${invManualDisc.label}</td><td></td><td></td><td class="r">−${RZA(discAmt)}</td>`;
-      body.appendChild(tr);
-    }
-    total = discounted;
-  }
   document.getElementById('psSubtotal').textContent = RZA(total);
-
   if(PAY.mode === 'balance'){
     const dep = Math.round(total * (PAY.depositPct/100));
     const bal = total - dep;
@@ -1039,15 +915,6 @@ $('overtime').addEventListener('change', e => {
 });
 $('otHours').addEventListener('input', e => { state.overtime.hours = Math.max(0, parseFloat(e.target.value)||0); render(); });
 $('rush').addEventListener('change', e => { state.rush.on = e.target.value === 'yes'; render(); });
-$('promoCode').addEventListener('input', () => render());
-$('discType').addEventListener('change', () => {
-  const on = $('discType').value !== 'none';
-  $('discValueField').style.display = on ? 'block' : 'none';
-  $('discLabelField').style.display = on ? 'block' : 'none';
-  render();
-});
-$('discValue').addEventListener('input', () => render());
-$('discLabel').addEventListener('input', () => render());
 $('ivBody').addEventListener('click', e => {
   const rm = e.target.getAttribute('data-rm');
   if(rm !== null){ (state.type === 'custom' ? state.custom : state.extras).splice(+rm,1); render(); }
