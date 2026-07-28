@@ -171,6 +171,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
         <li><a href="database.html">Database</a></li>
         <li><a href="workflow.html">Workflow</a></li>
         <li><a href="leads.html">Leads</a></li>
+        <li><a href="content.html">Content Planner</a></li>
         <li><a href="index.html">Calculator</a></li>
         <li><a href="email.html">Email</a></li>
         <li><a href="contract.html">Contract</a></li>
@@ -188,6 +189,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
                 <li><a href="database.html">Database</a></li>
                 <li><a href="workflow.html">Workflow</a></li>
                 <li><a href="leads.html" class="active">Leads</a></li>
+                <li><a href="content.html">Content Planner</a></li>
                 <li><a href="index.html">Calculator</a></li>
                 <li><a href="email.html">Email</a></li>
                 <li><a href="contract.html">Contract</a></li>
@@ -204,7 +206,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
             <h1>Leads &amp; Outreach</h1>
             <p>Track who you've emailed, generate a pitch deck PDF, and copy a ready-to-send accreditation email.</p>
         </div>
-        <span class="badge local" id="syncBadge">Local only</span>
+        <span class="badge local" id="syncBadge">Connecting…</span>
     </div>
 
     <div class="tab-row">
@@ -357,7 +359,9 @@ $('closeMenu').onclick=()=>{mm.classList.remove('open');sc.classList.remove('sho
 sc.onclick=()=>{mm.classList.remove('open');sc.classList.remove('show');};
 
 /* ================================================================
-   LEADS TRACKER — same cloud/local store pattern as database.html
+   LEADS TRACKER — cloud-only (Firestore), same as database.html's
+   dedicated cloud store. No local-storage fallback, so leads always
+   match across devices (desktop + mobile).
    ================================================================ */
 const STATUSES = ['Not Emailed','Emailed','Responded','Accepted','Rejected'];
 const CATEGORIES = ['Sports Event','Media / Press','Brand / Business','Wedding / Personal','Other'];
@@ -383,18 +387,6 @@ function blankLead(overrides){
     }, overrides||{});
 }
 
-function localLeadStore(){
-    const K='fom_leads';
-    const read=()=>{try{return JSON.parse(localStorage.getItem(K))||[];}catch(e){return[];}};
-    const writeAll=()=>localStorage.setItem(K,JSON.stringify(leads));
-    return {
-        start(){ leads=read().map(o=> o.id?o:Object.assign(o,{id:'loc_'+Math.random().toString(36).slice(2,9)})); renderLeads(); },
-        add(o){ o.id='loc_'+Date.now()+Math.random().toString(36).slice(2,6); leads.push(o); writeAll(); renderLeads(); },
-        update(){ writeAll(); },
-        remove(id){ leads=leads.filter(o=>o.id!==id); writeAll(); renderLeads(); },
-        clear(){ leads=[]; writeAll(); renderLeads(); }
-    };
-}
 function cloudLeadStore(db){
     const col=()=>db.collection('leads');
     const timers={};
@@ -731,13 +723,12 @@ $('logLeadBtn').onclick = () => {
 refreshEmailPreview();
 
 /* ================================================================
-   INIT — cloud (Firebase configured) or local, same as database.html
+   INIT — cloud only (Firestore), same as database.html
    ================================================================ */
-function startLocal(){
-    $('loginGate').style.display='none';
-    const badge=$('syncBadge'); badge.textContent='💾 Local only'; badge.className='badge local';
-    $('logoutBtn').style.display='none';
-    store=localLeadStore(); store.start();
+function notConfigured(){
+    const badge=$('syncBadge'); badge.textContent='⚠ Not configured'; badge.className='badge local';
+    document.querySelector('.table-card').insertAdjacentHTML('beforebegin',
+        '<div style="background:#fff4f4;border:1px solid #f0c0c0;color:#a33;border-radius:14px;padding:14px 18px;margin-bottom:14px;font-size:14px;">Leads are cloud-only so they sync to your phone \u2014 add your Firebase keys to <code>firebase-config.js</code> to turn this on.</div>');
 }
 function showConnError(){
     const badge=$('syncBadge'); badge.textContent='⚠ Offline'; badge.className='badge local';
@@ -762,7 +753,7 @@ function initCloud(){
         else { leads=[]; safeRenderLeads(); $('loginGate').style.display='flex'; }
     });
 }
-if(!configured){ startLocal(); } else { loadFirebase().then(initCloud).catch(showConnError); }
+if(!configured){ notConfigured(); } else { loadFirebase().then(initCloud).catch(showConnError); }
 
 /* initial deck preview */
 refreshDeckPreview();
