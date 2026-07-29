@@ -128,7 +128,16 @@ select.status-select{font-weight:700;border-radius:var(--radius-pill);text-align
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:700;margin-bottom:16px;}
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;}
-input[type=text],input[type=email],textarea,select.form-select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:14.5px;font-family:inherit;color:var(--ink);background:#fff;}
+input[type=text],input[type=email],textarea,select.form-select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:14.5px;font-family:inherit;color:var(--ink);background:#fff;height:44px;}
+textarea{height:auto;}
+select.form-select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236f6f6d' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer;}
+
+/* auth-check splash — shown instantly while Firebase resolves the
+   session, so the login card never "flashes then opens" on refresh */
+.auth-check{position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;align-items:center;justify-content:center;}
+.auth-check .ac-inner{text-align:center;}
+.auth-check .ac-inner .brand-mark{display:block;font-size:20px;margin-bottom:8px;}
+.auth-check .ac-inner p{color:var(--ink-soft);font-size:13px;}
 textarea{resize:vertical;min-height:80px;line-height:1.6;}
 input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
 .hint{font-size:12px;color:var(--ink-soft);margin-top:5px;line-height:1.6;}
@@ -151,6 +160,13 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
 </style>
 </head>
 <body>
+
+<div class="auth-check" id="authCheck">
+    <div class="ac-inner">
+        <span class="brand-mark">FOM STUDIOS</span>
+        <p>Checking session…</p>
+    </div>
+</div>
 
 <div class="login-gate" id="loginGate" style="display:none;">
     <div class="login-card">
@@ -318,9 +334,9 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
                 <div class="field"><label for="eLeadEmail">Contact email (optional, for logging)</label><input type="email" id="eLeadEmail" placeholder="media@example.com"></div>
                 <div class="actions">
                     <button class="btn" id="copyEmailBtn">Copy email</button>
-                    <button class="btn ghost" id="logLeadBtn">Log as lead (marks emailed today)</button>
+                    <button class="btn ghost" id="logLeadBtn">Log as lead</button>
                 </div>
-                <div class="hint">Copies plain text — paste straight into Gmail. Attach your exported pitch deck PDF before sending.</div>
+                <div class="hint">Copies plain text — paste straight into Gmail. Attach your exported pitch deck PDF before sending. "Log as lead" adds this company to the tracker and marks it emailed today.</div>
             </div>
             <div>
                 <div class="panel" style="margin-bottom:12px;padding:14px 22px;"><h2 style="margin:0;">Email preview</h2></div>
@@ -397,11 +413,11 @@ function cloudLeadStore(db){
                 leads = snap.docs.map(d=>({id:d.id, ...d.data()}));
                 leads.sort((a,b)=> tsMillis(a.createdAt) - tsMillis(b.createdAt));
                 if(editingCell){ pendingRender=true; } else safeRenderLeads();
-            }, err=>console.warn('Firestore:',err));
+            }, err=>{ console.warn('Firestore:',err); toast('Could not load leads — ' + (err.code==='permission-denied' ? 'check your Firestore rules allow the "leads" collection.' : (err.message||'connection error'))); });
         },
-        add(o){ o.createdAt = firebase.firestore.FieldValue.serverTimestamp(); col().add(strip(o)); },
-        update(id){ clearTimeout(timers[id]); timers[id]=setTimeout(()=>{ const o=leads.find(x=>x.id===id); if(o) col().doc(id).set(strip(o),{merge:true}); },500); },
-        remove(id){ col().doc(id).delete(); },
+        add(o){ o.createdAt = firebase.firestore.FieldValue.serverTimestamp(); col().add(strip(o)).catch(err=>{ console.error(err); toast('Could not save — ' + (err.code==='permission-denied' ? 'add a Firestore rule for the "leads" collection.' : (err.message||'try again.'))); }); },
+        update(id){ clearTimeout(timers[id]); timers[id]=setTimeout(()=>{ const o=leads.find(x=>x.id===id); if(o) col().doc(id).set(strip(o),{merge:true}).catch(err=>{ console.error(err); toast('Could not save changes — '+(err.message||'try again.')); }); },500); },
+        remove(id){ col().doc(id).delete().catch(err=>{ console.error(err); toast('Could not delete — '+(err.message||'try again.')); }); },
         clear(){ leads.slice().forEach(o=>col().doc(o.id).delete()); }
     };
 }
@@ -510,7 +526,7 @@ leadTbody().addEventListener('change', e=>{
 leadTbody().addEventListener('click', e=>{ const rm=e.target.dataset.rm; if(rm!==undefined) store.remove(leads[+rm].id); });
 leadSearch().addEventListener('input', renderLeads);
 
-$('addBtn').onclick = ()=>{ if(store) store.add(blankLead()); };
+$('addBtn').onclick = ()=>{ if(!store){ toast('Still connecting to the cloud — wait a second and try again.'); return; } store.add(blankLead()); };
 $('clearBtn').onclick = ()=>{ if(store && confirm('Delete ALL leads? This cannot be undone.')) store.clear(); };
 $('csvBtn').onclick = ()=>{
     const head=['Lead ID','Company','Contact','Email','Website/Instagram','Location','Category','Emailed','Date Emailed','Follow-up By','Status','Comments'];
@@ -572,18 +588,42 @@ function buildDeckHTML(){
           </div>
         </div>`, {dark:true});
 
+    const fallbackImg = 'assets/mascot-head-color.png';
+    const p0 = portfolio[0] || fallbackImg;
+    const p1 = portfolio[1] || fallbackImg;
+
     const about_page = page(`
-        <div class="pd-inner">
-          <div class="pd-kicker">01 — Who we are</div>
-          <h1 class="pd-h1">About Us</h1>
-          <p class="pd-body">${esc(about)}</p>
+        <div class="pd-split">
+          <div class="pd-inner pd-inner-half">
+            <div class="pd-kicker">01 — Who we are</div>
+            <h1 class="pd-h1">About Us</h1>
+            <p class="pd-body">${esc(about)}</p>
+          </div>
+          <div class="pd-side">
+            <div class="pd-framed pd-framed-tall">
+              <img src="${p0}" onerror="this.closest('.pd-framed').style.display='none'">
+              <div class="pd-framed-label">FOM STUDIOS</div>
+            </div>
+          </div>
         </div>`);
 
     const what_page = page(`
-        <div class="pd-inner">
-          <div class="pd-kicker">02 — Services</div>
-          <h1 class="pd-h1">What We Do</h1>
-          <ul class="pd-list">${what.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>
+        <div class="pd-split">
+          <div class="pd-inner pd-inner-half">
+            <div class="pd-kicker">02 — Services</div>
+            <h1 class="pd-h1">What We Do</h1>
+            <ul class="pd-list">${what.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>
+          </div>
+          <div class="pd-side pd-side-pair">
+            <div class="pd-framed">
+              <img src="${p0}" onerror="this.closest('.pd-framed').style.display='none'">
+              <div class="pd-framed-label">VIDEOGRAPHY</div>
+            </div>
+            <div class="pd-framed">
+              <img src="${p1}" onerror="this.closest('.pd-framed').style.display='none'">
+              <div class="pd-framed-label">PHOTOGRAPHY</div>
+            </div>
+          </div>
         </div>`);
 
     const portfolio_page = page(`
@@ -593,11 +633,21 @@ function buildDeckHTML(){
           <div class="pd-grid">${portfolio.map(src=>`<div class="pd-cell"><img src="${src}" onerror="this.parentElement.style.display='none'"></div>`).join('')}</div>
         </div>`);
 
+    const whyColors = ['#02367B','#1f8a4c','#a9720b'];
+    const whyMain = why.slice(0,3);
+    const whyRest = why.slice(3);
     const why_page = page(`
         <div class="pd-inner">
           <div class="pd-kicker">04 — The FOM Difference</div>
           <h1 class="pd-h1">Why Work With Us</h1>
-          <ul class="pd-list">${why.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>
+          <div class="pd-polaroid-row">
+            ${whyMain.map((reason,i)=>`
+              <div class="pd-polaroid">
+                <div class="pd-polaroid-photo"><img src="${portfolio[i]||fallbackImg}" onerror="this.closest('.pd-polaroid').querySelector('.pd-polaroid-photo').style.background='#ddd'"></div>
+                <span class="pd-polaroid-tag" style="background:${whyColors[i%3]};">${esc(reason)}</span>
+              </div>`).join('')}
+          </div>
+          ${whyRest.length ? `<ul class="pd-list pd-list-compact">${whyRest.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>` : ''}
         </div>`);
 
     const clients_page = page(`
@@ -620,7 +670,7 @@ function buildDeckHTML(){
           </div>
         </div>`, {dark:true});
 
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><base href="${esc(document.baseURI)}"><style>
         *{margin:0;padding:0;box-sizing:border-box;}
         body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;}
         .pd-page{width:297mm;height:210mm;position:relative;overflow:hidden;page-break-after:always;display:flex;align-items:stretch;}
@@ -628,10 +678,12 @@ function buildDeckHTML(){
         .pd-inner{padding:22mm 26mm;width:100%;display:flex;flex-direction:column;justify-content:center;}
         .pd-kicker{font-size:11pt;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#02367B;margin-bottom:10mm;}
         .pd-h1{font-size:36pt;font-weight:800;letter-spacing:-.01em;margin-bottom:12mm;}
-        .pd-body{font-size:14pt;line-height:1.8;max-width:70%;color:#3a3a38;}
-        .pd-list{list-style:none;display:flex;flex-direction:column;gap:8mm;max-width:75%;}
+        .pd-body{font-size:14pt;line-height:1.8;max-width:95%;color:#3a3a38;}
+        .pd-list{list-style:none;display:flex;flex-direction:column;gap:8mm;max-width:95%;}
         .pd-list li{font-size:15pt;font-weight:600;padding-left:14mm;position:relative;}
         .pd-list li::before{content:"";position:absolute;left:0;top:6px;width:8mm;height:2px;background:#02367B;}
+        .pd-list-compact{margin-top:10mm;gap:4mm;}
+        .pd-list-compact li{font-size:11pt;font-weight:500;color:#5a5a57;}
         .pd-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:6mm;height:130mm;}
         .pd-cell{border-radius:6px;overflow:hidden;background:#ddd;}
         .pd-cell img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -650,6 +702,22 @@ function buildDeckHTML(){
         .pd-close-line{width:70%;height:1px;background:rgba(241,240,236,.3);}
         .pd-close-mid .pd-big{font-size:52pt;}
         .pd-close-contact{display:flex;gap:14mm;font-size:12pt;color:#f1f0ec;}
+        /* split layout: text left, image(s) right — fills the gap on About Us / What We Do */
+        .pd-split{display:flex;width:100%;align-items:stretch;}
+        .pd-inner-half{width:52%;justify-content:center;}
+        .pd-side{width:48%;display:flex;align-items:center;justify-content:center;padding:14mm 18mm 14mm 0;gap:8mm;}
+        .pd-side-pair{flex-direction:row;}
+        .pd-framed{flex:1;background:#02367B;border-radius:10px;padding:6mm 6mm 12mm;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,.15);}
+        .pd-framed-tall{max-width:80mm;margin:0 auto;}
+        .pd-framed img{width:100%;height:60mm;object-fit:cover;border-radius:4px;display:block;background:#dfe3ea;}
+        .pd-framed-tall img{height:95mm;}
+        .pd-framed-label{color:#fff;text-align:center;font-weight:800;letter-spacing:1.5px;font-size:11pt;margin-top:6mm;text-transform:uppercase;}
+        /* polaroid row — Why Work With Us */
+        .pd-polaroid-row{display:flex;gap:10mm;margin-top:4mm;}
+        .pd-polaroid{background:#fff;border:1px solid #e2e0d8;border-radius:8px;padding:5mm 5mm 0;box-shadow:0 6px 18px rgba(0,0,0,.08);width:70mm;}
+        .pd-polaroid-photo{width:100%;height:55mm;background:#ddd;border-radius:4px;overflow:hidden;margin-bottom:5mm;}
+        .pd-polaroid-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+        .pd-polaroid-tag{display:block;color:#fff;font-weight:700;font-size:10.5pt;text-align:center;border-radius:6px 6px 0 0;margin:0 -5mm;padding:4mm 4mm 8mm;line-height:1.3;}
         @media print{@page{size:A4 landscape;margin:0;}}
     </style></head><body>${cover}${about_page}${what_page}${portfolio_page}${why_page}${clients_page}${close_page}</body></html>`;
 }
@@ -664,7 +732,20 @@ document.querySelector('#tabDeck .panel').addEventListener('input', refreshDeckP
 document.querySelector('#tabDeck .panel').addEventListener('change', refreshDeckPreview);
 $('deckPrintBtn').onclick = () => {
     refreshDeckPreview();
-    setTimeout(()=>{ const frame=$('deckFrame'); frame.contentWindow.focus(); frame.contentWindow.print(); }, 350);
+    const frame = $('deckFrame');
+    const waitForImages = () => {
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        const imgs = Array.from(doc.images || []);
+        if(!imgs.length) return Promise.resolve();
+        return Promise.all(imgs.map(img => (img.complete) ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })));
+    };
+    // give the iframe a beat to parse the doc before we look for <img> tags in it
+    setTimeout(()=>{
+        waitForImages().then(()=>{
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+        });
+    }, 200);
 };
 
 /* ================================================================
@@ -726,11 +807,13 @@ refreshEmailPreview();
    INIT — cloud only (Firestore), same as database.html
    ================================================================ */
 function notConfigured(){
+    $('authCheck').style.display='none';
     const badge=$('syncBadge'); badge.textContent='⚠ Not configured'; badge.className='badge local';
     document.querySelector('.table-card').insertAdjacentHTML('beforebegin',
         '<div style="background:#fff4f4;border:1px solid #f0c0c0;color:#a33;border-radius:14px;padding:14px 18px;margin-bottom:14px;font-size:14px;">Leads are cloud-only so they sync to your phone \u2014 add your Firebase keys to <code>firebase-config.js</code> to turn this on.</div>');
 }
 function showConnError(){
+    $('authCheck').style.display='none';
     const badge=$('syncBadge'); badge.textContent='⚠ Offline'; badge.className='badge local';
     document.querySelector('.table-card').insertAdjacentHTML('beforebegin',
         '<div style="background:#fff4f4;border:1px solid #f0c0c0;color:#a33;border-radius:14px;padding:14px 18px;margin-bottom:14px;font-size:14px;">Couldn\u2019t reach the cloud database. Check your connection, then <a href="#" onclick="location.reload();return false;" style="color:var(--accent);font-weight:700;">refresh</a>.</div>');
@@ -749,6 +832,7 @@ function initCloud(){
     $('lgBtn').onclick=login;
     $('lgPass').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
     auth.onAuthStateChanged(u=>{
+        $('authCheck').style.display='none';
         if(u){ $('loginGate').style.display='none'; store.start(); }
         else { leads=[]; safeRenderLeads(); $('loginGate').style.display='flex'; }
     });
