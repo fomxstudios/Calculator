@@ -46,6 +46,10 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 
 /* login gate */
 .login-gate{position:fixed;inset:0;background:var(--bg);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.auth-check{position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;align-items:center;justify-content:center;}
+.auth-check .ac-inner{text-align:center;}
+.auth-check .ac-inner .brand-mark{display:block;font-size:20px;margin-bottom:8px;}
+.auth-check .ac-inner p{color:var(--ink-soft);font-size:13px;}
 .login-card{background:var(--bg-pill);border:1px solid var(--line);border-radius:var(--radius-card);padding:34px 30px;max-width:370px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.1);}
 .login-card .brand-mark{font-size:22px;display:block;margin-bottom:4px;}
 .login-card .lg-sub{color:var(--ink-soft);font-size:13px;margin-bottom:22px;}
@@ -176,7 +180,14 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 <body>
 
 <!-- LOGIN GATE -->
-<div class="login-gate" id="loginGate">
+<div class="auth-check" id="authCheck">
+    <div class="ac-inner">
+        <span class="brand-mark">FOM STUDIOS</span>
+        <p>Checking session…</p>
+    </div>
+</div>
+
+<div class="login-gate" id="loginGate" style="display:none;">
     <div class="login-card">
         <span class="brand-mark">FOM STUDIOS</span>
         <p class="lg-sub">Admin sign in</p>
@@ -417,6 +428,8 @@ function loadScript(src){ return new Promise((res,rej)=>{ const s=document.creat
 
 (async function init(){
     if(!configured){
+        $('authCheck').style.display='none';
+        $('loginGate').style.display='flex';
         $('loginGate').innerHTML = `<div class="login-card">
             <span class="brand-mark">FOM STUDIOS</span>
             <p class="lg-sub" style="margin-bottom:0;">Firebase is not configured — check firebase-config.js.</p>
@@ -461,12 +474,14 @@ function loadScript(src){ return new Promise((res,rej)=>{ const s=document.creat
         $('logoutBtn').onclick = () => auth.signOut();
 
         auth.onAuthStateChanged(u => {
+            $('authCheck').style.display = 'none';
             $('loginGate').style.display = u ? 'none' : 'flex';
             $('logoutBtn').style.display = u ? 'inline-block' : 'none';
             if(u) store.start();
         });
     }catch(e){
         console.error('Workflow init failed:', e.message || e);
+        $('authCheck').style.display='none';
     }
 })();
 </script>
