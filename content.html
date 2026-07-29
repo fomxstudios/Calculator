@@ -101,8 +101,16 @@ nav.pill .nav-links a:hover,nav.pill .nav-links a.active{color:var(--accent);}
 .idea-form-row{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:10px;align-items:end;}
 .idea-form-row .field{margin-bottom:0;}
 .idea-form-row label{display:block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;}
-.idea-form-row input,.idea-form-row select{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink);}
+.idea-form-row input,.idea-form-row select{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink);height:44px;box-sizing:border-box;}
+.idea-form-row select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236f6f6d' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer;}
 .idea-form-row input:focus,.idea-form-row select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+/* auth-check splash — shown instantly while Firebase resolves the
+   session, so the login card never "flashes then opens" on refresh */
+.auth-check{position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;align-items:center;justify-content:center;}
+.auth-check .ac-inner{text-align:center;}
+.auth-check .ac-inner .brand-mark{display:block;font-size:20px;margin-bottom:8px;}
+.auth-check .ac-inner p{color:var(--ink-soft);font-size:13px;}
 @media(max-width:760px){.idea-form-row{grid-template-columns:1fr 1fr;}}
 
 .idea-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
@@ -150,6 +158,8 @@ select.status-select{font-weight:700;border-radius:var(--radius-pill);text-align
 .st-ready{background:#e8f7ee;color:#1f8a4c;}
 .st-posted{background:#dff3e6;color:#146c37;font-weight:700;}
 .empty{padding:40px;text-align:center;color:var(--ink-soft);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-dark);color:#fff;padding:12px 22px;border-radius:var(--radius-pill);font-size:14px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:4000;max-width:88vw;text-align:center;}
+.toast.show{opacity:1;}
 
 @media(max-width:860px){nav.pill .nav-links{display:none;}.nav-shell{padding:14px var(--gutter) 0;}}
 @media(max-width:980px){.kpis{grid-template-columns:repeat(3,1fr);}}
@@ -157,6 +167,13 @@ select.status-select{font-weight:700;border-radius:var(--radius-pill);text-align
 </style>
 </head>
 <body>
+
+<div class="auth-check" id="authCheck">
+    <div class="ac-inner">
+        <span class="brand-mark">FOM STUDIOS</span>
+        <p>Checking session…</p>
+    </div>
+</div>
 
 <div class="login-gate" id="loginGate" style="display:none;">
     <div class="login-card">
@@ -304,11 +321,15 @@ select.status-select{font-weight:700;border-radius:var(--radius-pill);text-align
     </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script src="firebase-config.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 const tsMillis = t => (t && typeof t.toMillis==='function') ? t.toMillis() : 0;
+let toastT;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2600); }
 
 /* ================================================================
    TABS
@@ -367,12 +388,12 @@ function cloudItemStore(db){
                 items = snap.docs.map(d=>({id:d.id, ...d.data()}));
                 items.sort((a,b)=> tsMillis(b.createdAt) - tsMillis(a.createdAt));
                 if(editingCell){ pendingRender=true; } else safeRender();
-            }, err=>console.warn('Firestore:',err));
+            }, err=>{ console.warn('Firestore:',err); toast('Could not load content — ' + (err.code==='permission-denied' ? 'check your Firestore rules allow the "contentPlanner" collection.' : (err.message||'connection error'))); });
         },
-        add(o){ o.createdAt = firebase.firestore.FieldValue.serverTimestamp(); col().add(strip(o)); },
-        update(id){ clearTimeout(timers[id]); timers[id]=setTimeout(()=>{ const o=items.find(x=>x.id===id); if(o) col().doc(id).set(strip(o),{merge:true}); },500); },
-        updateNow(id){ const o=items.find(x=>x.id===id); if(o) col().doc(id).set(strip(o),{merge:true}); },
-        remove(id){ col().doc(id).delete(); },
+        add(o){ o.createdAt = firebase.firestore.FieldValue.serverTimestamp(); col().add(strip(o)).catch(err=>{ console.error(err); toast('Could not save — ' + (err.code==='permission-denied' ? 'add a Firestore rule for the "contentPlanner" collection.' : (err.message||'try again.'))); }); },
+        update(id){ clearTimeout(timers[id]); timers[id]=setTimeout(()=>{ const o=items.find(x=>x.id===id); if(o) col().doc(id).set(strip(o),{merge:true}).catch(err=>{ console.error(err); toast('Could not save changes — '+(err.message||'try again.')); }); },500); },
+        updateNow(id){ const o=items.find(x=>x.id===id); if(o) col().doc(id).set(strip(o),{merge:true}).catch(err=>{ console.error(err); toast('Could not save — '+(err.message||'try again.')); }); },
+        remove(id){ col().doc(id).delete().catch(err=>{ console.error(err); toast('Could not delete — '+(err.message||'try again.')); }); },
         clear(){ items.slice().forEach(o=>col().doc(o.id).delete()); }
     };
 }
@@ -432,7 +453,7 @@ $('ideaBoard').addEventListener('click', e=>{
 });
 
 $('addIdeaBtn').onclick = ()=>{
-    if(!store){ return; }
+    if(!store){ toast('Still connecting to the cloud — wait a second and try again.'); return; }
     const title = $('iTitle').value.trim();
     if(!title){ $('iTitle').focus(); return; }
     store.add(blankItem({ title, type:$('iType').value, notes:$('iNotes').value.trim(), status:'Idea' }));
@@ -523,7 +544,7 @@ trackerTbody().addEventListener('change', e=>{
 trackerTbody().addEventListener('click', e=>{ const rm=e.target.dataset.rm; if(rm!==undefined) store.remove(items[+rm].id); });
 trackerSearch().addEventListener('input', renderTracker);
 
-$('addRowBtn').onclick = ()=>{ if(store) store.add(blankItem()); };
+$('addRowBtn').onclick = ()=>{ if(!store){ toast('Still connecting to the cloud — wait a second and try again.'); return; } store.add(blankItem()); };
 $('clearBtn').onclick = ()=>{ if(store && confirm('Delete ALL content items? This cannot be undone.')) store.clear(); };
 $('csvBtn').onclick = ()=>{
     const head=['Title','Type','Platform','Status','Target Date','Posted Date','Notes','Post Link'];
@@ -537,11 +558,13 @@ $('csvBtn').onclick = ()=>{
    No local-storage fallback, so this stays in sync across devices.
    ================================================================ */
 function notConfigured(){
+    $('authCheck').style.display='none';
     const badge=$('syncBadge'); badge.textContent='⚠ Not configured'; badge.className='badge local';
     document.querySelector('.idea-add').insertAdjacentHTML('beforebegin',
         '<div style="background:#fff4f4;border:1px solid #f0c0c0;color:#a33;border-radius:14px;padding:14px 18px;margin-bottom:14px;font-size:14px;">Content Planner is cloud-only so it syncs to your phone \u2014 add your Firebase keys to <code>firebase-config.js</code> to turn this on.</div>');
 }
 function showConnError(){
+    $('authCheck').style.display='none';
     const badge=$('syncBadge'); badge.textContent='⚠ Offline'; badge.className='badge local';
     document.querySelector('.idea-add').insertAdjacentHTML('beforebegin',
         '<div style="background:#fff4f4;border:1px solid #f0c0c0;color:#a33;border-radius:14px;padding:14px 18px;margin-bottom:14px;font-size:14px;">Couldn\u2019t reach the cloud database. Check your connection, then <a href="#" onclick="location.reload();return false;" style="color:var(--accent);font-weight:700;">refresh</a>.</div>');
@@ -560,6 +583,7 @@ function initCloud(){
     $('lgBtn').onclick=login;
     $('lgPass').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
     auth.onAuthStateChanged(u=>{
+        $('authCheck').style.display='none';
         if(u){ $('loginGate').style.display='none'; store.start(); }
         else { items=[]; safeRender(); $('loginGate').style.display='flex'; }
     });
