@@ -426,8 +426,18 @@ const configured = (typeof firebaseConfig!=='undefined') && firebaseConfig &&
 
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
 
+let authResolved = false;
+setTimeout(()=>{
+    if(!authResolved){
+        $('authCheck').style.display='none';
+        $('loginGate').style.display='flex';
+        const err=$('lgErr'); if(err) err.textContent = 'Taking longer than expected — check your connection and try logging in, or refresh the page.';
+    }
+}, 8000);
+
 (async function init(){
     if(!configured){
+        authResolved=true;
         $('authCheck').style.display='none';
         $('loginGate').style.display='flex';
         $('loginGate').innerHTML = `<div class="login-card">
@@ -474,6 +484,7 @@ function loadScript(src){ return new Promise((res,rej)=>{ const s=document.creat
         $('logoutBtn').onclick = () => auth.signOut();
 
         auth.onAuthStateChanged(u => {
+            authResolved=true;
             $('authCheck').style.display = 'none';
             $('loginGate').style.display = u ? 'none' : 'flex';
             $('logoutBtn').style.display = u ? 'inline-block' : 'none';
@@ -481,6 +492,7 @@ function loadScript(src){ return new Promise((res,rej)=>{ const s=document.creat
         });
     }catch(e){
         console.error('Workflow init failed:', e.message || e);
+        authResolved=true;
         $('authCheck').style.display='none';
     }
 })();
