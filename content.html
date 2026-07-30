@@ -558,17 +558,27 @@ $('csvBtn').onclick = ()=>{
    No local-storage fallback, so this stays in sync across devices.
    ================================================================ */
 function notConfigured(){
+    authResolved=true;
     $('authCheck').style.display='none';
     const badge=$('syncBadge'); badge.textContent='⚠ Not configured'; badge.className='badge local';
     document.querySelector('.idea-add').insertAdjacentHTML('beforebegin',
         '<div style="background:#fff4f4;border:1px solid #f0c0c0;color:#a33;border-radius:14px;padding:14px 18px;margin-bottom:14px;font-size:14px;">Content Planner is cloud-only so it syncs to your phone \u2014 add your Firebase keys to <code>firebase-config.js</code> to turn this on.</div>');
 }
 function showConnError(){
+    authResolved=true;
     $('authCheck').style.display='none';
     const badge=$('syncBadge'); badge.textContent='⚠ Offline'; badge.className='badge local';
     document.querySelector('.idea-add').insertAdjacentHTML('beforebegin',
         '<div style="background:#fff4f4;border:1px solid #f0c0c0;color:#a33;border-radius:14px;padding:14px 18px;margin-bottom:14px;font-size:14px;">Couldn\u2019t reach the cloud database. Check your connection, then <a href="#" onclick="location.reload();return false;" style="color:var(--accent);font-weight:700;">refresh</a>.</div>');
 }
+let authResolved = false;
+setTimeout(()=>{
+    if(!authResolved){
+        $('authCheck').style.display='none';
+        $('loginGate').style.display='flex';
+        $('lgErr').textContent = 'Taking longer than expected — check your connection and try logging in, or refresh the page.';
+    }
+}, 8000);
 function initCloud(){
     firebase.initializeApp(firebaseConfig);
     const auth=firebase.auth();
@@ -583,6 +593,7 @@ function initCloud(){
     $('lgBtn').onclick=login;
     $('lgPass').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
     auth.onAuthStateChanged(u=>{
+        authResolved=true;
         $('authCheck').style.display='none';
         if(u){ $('loginGate').style.display='none'; store.start(); }
         else { items=[]; safeRender(); $('loginGate').style.display='flex'; }
