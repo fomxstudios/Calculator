@@ -141,6 +141,7 @@ select.form-select{-webkit-appearance:none;appearance:none;background-image:url(
 textarea{resize:vertical;min-height:80px;line-height:1.6;}
 input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
 .hint{font-size:12px;color:var(--ink-soft);margin-top:5px;line-height:1.6;}
+.hint code{background:#eceae4;padding:1px 5px;border-radius:5px;font-size:11.5px;}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
 .actions .btn{flex:1;min-width:140px;text-align:center;}
 .chip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
@@ -298,7 +299,9 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
                 <div class="field"><label for="dAbout">About us</label><textarea id="dAbout" rows="5"></textarea></div>
                 <div class="field"><label for="dWhat">What we do (one per line)</label><textarea id="dWhat" rows="5"></textarea></div>
                 <div class="field"><label for="dWhy">Why work with us (one per line)</label><textarea id="dWhy" rows="5"></textarea></div>
-                <div class="field"><label for="dClients">Previous clients (one per line)</label><textarea id="dClients" rows="4"></textarea></div>
+                <div class="field"><label for="dClients">Previous clients (one per line)</label><textarea id="dClients" rows="4"></textarea>
+                    <div class="hint">To show a logo instead of a text pill, add it after a pipe: <code>Hyde Park Falcons | assets/clients/hyde-park-falcons.png</code>. Upload logo files to an <code>assets/clients/</code> folder next to this page.</div>
+                </div>
                 <div class="field">
                     <label>Portfolio images (pick up to 6)</label>
                     <div class="chip-grid" id="portfolioPicker"></div>
@@ -537,12 +540,20 @@ $('csvBtn').onclick = ()=>{
 
 /* ================================================================
    PITCH DECK BUILDER — 7 landscape pages, printed via hidden iframe
+
+   Images are embedded as data: URLs (fetched once, cached, inlined)
+   rather than referenced by relative path. This is what actually
+   makes them show up reliably in both the iframe preview and the
+   printed/exported PDF — relative asset paths inside an iframe's
+   document.write() output are fragile across browsers, so we sidestep
+   that entirely by baking the image bytes straight into the HTML.
    ================================================================ */
 const WORK_IMAGES = Array.from({length:18},(_,i)=>`assets/work${i+1}.jpg`);
 const DEFAULT_ABOUT = "Frames Of Motion (FOM) Studios is a creative media brand specialising in photography, videography and visual storytelling, based in Johannesburg, South Africa. We focus on capturing moments with precision, emotion and a cinematic edge — helping brands, events and individuals tell their story visually.";
 const DEFAULT_WHAT = ["Sports & Event Photography","Cinematic Videography & Reels","Aerial / Drone Coverage","Automotive & Lifestyle Content","Content Editing & Colour Grading"].join('\n');
 const DEFAULT_WHY = ["Fast turnaround on edited deliverables","Cinematic, story-driven visual style","Reliable, professional on-site presence","Flexible packages tailored to your needs","Based in Johannesburg, available to travel"].join('\n');
-const DEFAULT_CLIENTS = ["Hyde Park Falcons","Party Bubbles Events","Momsi Mather — Professional Padel Player"].join('\n');
+const DEFAULT_CLIENTS = ["Hyde Park Falcons", "Party Bubbles Events", "Momsi Mather — Professional Padel Player"].join('\n');
+const FALLBACK_IMG = 'assets/mascot-head-color.png';
 
 (function initDeckForm(){
     $('dAbout').value = DEFAULT_ABOUT;
@@ -561,15 +572,58 @@ function selectedPortfolio(){
 }
 function linesOf(id){ return $(id).value.split('\n').map(s=>s.trim()).filter(Boolean); }
 
-function buildDeckHTML(){
+/* clients textarea supports an optional "Name | assets/clients/logo.png" format —
+   the part after the pipe is a logo path; if omitted, that client just renders
+   as a text pill like before */
+function parsedClients(){
+    return linesOf('dClients').map(line=>{
+        const [name, logo] = line.split('|').map(s=>s && s.trim());
+        return { name: name || line, logo: logo || null };
+    });
+}
+
+/* ---- image fetch → data URL, cached so we only ever fetch each asset once ---- */
+const imageDataCache = {};
+function toDataURL(path){
+    if(!path) return Promise.resolve(null);
+    if(imageDataCache[path]) return imageDataCache[path];
+    const p = fetch(path)
+        .then(res => { if(!res.ok) throw new Error('HTTP '+res.status); return res.blob(); })
+        .then(blob => new Promise((resolve,reject)=>{
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        }))
+        .catch(err => { console.warn('Deck image failed to load:', path, err); return null; });
+    imageDataCache[path] = p;
+    return p;
+}
+/* resolves a list of asset paths into a {path: dataURLorNull} map */
+async function resolveImages(paths){
+    const unique = [...new Set(paths.filter(Boolean))];
+    const results = await Promise.all(unique.map(p => toDataURL(p)));
+    const map = {};
+    unique.forEach((p,i)=>{ map[p] = results[i]; });
+    return map;
+}
+/* img() — returns a data URL if we have one, else the original path as a last resort */
+function img(map, path){ return (map[path]) || path; }
+
+function buildDeckHTML(imgMap){
     const client = $('dClient').value.trim();
     const about = $('dAbout').value.trim();
     const what = linesOf('dWhat');
     const why = linesOf('dWhy');
-    const clients = linesOf('dClients');
+    const clients = parsedClients();
     const portfolio = selectedPortfolio();
 
     const page = (inner, opts) => `<section class="pd-page" style="${opts&&opts.dark?'background:#1a1a18;color:#f1f0ec;':'background:#f1f0ec;color:#1a1a18;'}">${inner}</section>`;
+    /* framed photo card that degrades to a branded placeholder instead of
+       vanishing if an image genuinely can't be found */
+    const framedImg = (path, cls) => imgMap[path]
+        ? `<img class="${cls||''}" src="${imgMap[path]}">`
+        : `<div class="pd-img-fallback ${cls||''}"><img src="${imgMap[FALLBACK_IMG]||FALLBACK_IMG}" class="pd-fallback-mascot"></div>`;
 
     const cover = page(`
         <div class="pd-cover-frame">
@@ -584,13 +638,12 @@ function buildDeckHTML(){
           </div>
           <div class="pd-cover-bottom">
             <span>www.fomstudios.co.za</span>
-            <img src="assets/mascot-head-color.png" onerror="this.style.display='none'">
+            <img src="${img(imgMap, FALLBACK_IMG)}" class="pd-cover-mascot">
           </div>
         </div>`, {dark:true});
 
-    const fallbackImg = 'assets/mascot-head-color.png';
-    const p0 = portfolio[0] || fallbackImg;
-    const p1 = portfolio[1] || fallbackImg;
+    const p0 = portfolio[0] || FALLBACK_IMG;
+    const p1 = portfolio[1] || FALLBACK_IMG;
 
     const about_page = page(`
         <div class="pd-split">
@@ -601,7 +654,7 @@ function buildDeckHTML(){
           </div>
           <div class="pd-side">
             <div class="pd-framed pd-framed-tall">
-              <img src="${p0}" onerror="this.closest('.pd-framed').style.display='none'">
+              ${framedImg(p0)}
               <div class="pd-framed-label">FOM STUDIOS</div>
             </div>
           </div>
@@ -616,11 +669,11 @@ function buildDeckHTML(){
           </div>
           <div class="pd-side pd-side-pair">
             <div class="pd-framed">
-              <img src="${p0}" onerror="this.closest('.pd-framed').style.display='none'">
+              ${framedImg(p0)}
               <div class="pd-framed-label">VIDEOGRAPHY</div>
             </div>
             <div class="pd-framed">
-              <img src="${p1}" onerror="this.closest('.pd-framed').style.display='none'">
+              ${framedImg(p1)}
               <div class="pd-framed-label">PHOTOGRAPHY</div>
             </div>
           </div>
@@ -630,7 +683,7 @@ function buildDeckHTML(){
         <div class="pd-inner">
           <div class="pd-kicker">03 — Selected Work</div>
           <h1 class="pd-h1">Portfolio</h1>
-          <div class="pd-grid">${portfolio.map(src=>`<div class="pd-cell"><img src="${src}" onerror="this.parentElement.style.display='none'"></div>`).join('')}</div>
+          <div class="pd-grid">${portfolio.map(src=>`<div class="pd-cell">${imgMap[src] ? `<img src="${imgMap[src]}">` : ''}</div>`).join('')}</div>
         </div>`);
 
     const whyColors = ['#02367B','#1f8a4c','#a9720b'];
@@ -643,7 +696,7 @@ function buildDeckHTML(){
           <div class="pd-polaroid-row">
             ${whyMain.map((reason,i)=>`
               <div class="pd-polaroid">
-                <div class="pd-polaroid-photo"><img src="${portfolio[i]||fallbackImg}" onerror="this.closest('.pd-polaroid').querySelector('.pd-polaroid-photo').style.background='#ddd'"></div>
+                <div class="pd-polaroid-photo">${framedImg(portfolio[i]||FALLBACK_IMG)}</div>
                 <span class="pd-polaroid-tag" style="background:${whyColors[i%3]};">${esc(reason)}</span>
               </div>`).join('')}
           </div>
@@ -654,7 +707,11 @@ function buildDeckHTML(){
         <div class="pd-inner">
           <div class="pd-kicker">05 — Trusted By</div>
           <h1 class="pd-h1">Previous Clients</h1>
-          <div class="pd-client-pills">${clients.map(c=>`<span class="pd-pill2">${esc(c)}</span>`).join('')}</div>
+          <div class="pd-client-grid">${clients.map(c=>
+              c.logo && imgMap[c.logo]
+                ? `<div class="pd-client-card"><img src="${imgMap[c.logo]}"><span>${esc(c.name)}</span></div>`
+                : `<span class="pd-pill2">${esc(c.name)}</span>`
+          ).join('')}</div>
         </div>`);
 
     const close_page = page(`
@@ -670,7 +727,7 @@ function buildDeckHTML(){
           </div>
         </div>`, {dark:true});
 
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><base href="${esc(document.baseURI)}"><style>
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
         *{margin:0;padding:0;box-sizing:border-box;}
         body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;}
         .pd-page{width:297mm;height:210mm;position:relative;overflow:hidden;page-break-after:always;display:flex;align-items:stretch;}
@@ -685,10 +742,13 @@ function buildDeckHTML(){
         .pd-list-compact{margin-top:10mm;gap:4mm;}
         .pd-list-compact li{font-size:11pt;font-weight:500;color:#5a5a57;}
         .pd-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:6mm;height:130mm;}
-        .pd-cell{border-radius:6px;overflow:hidden;background:#ddd;}
+        .pd-cell{border-radius:6px;overflow:hidden;background:#dfe3ea;}
         .pd-cell img{width:100%;height:100%;object-fit:cover;display:block;}
-        .pd-client-pills{display:flex;flex-wrap:wrap;gap:8mm;max-width:80%;}
+        .pd-client-grid{display:flex;flex-wrap:wrap;gap:8mm;max-width:100%;align-items:center;}
         .pd-pill2{background:#fff;border:1.5px solid #02367B;color:#02367B;border-radius:999px;padding:5mm 10mm;font-size:14pt;font-weight:700;}
+        .pd-client-card{background:#fff;border:1px solid #e2e0d8;border-radius:12px;padding:8mm 10mm;display:flex;flex-direction:column;align-items:center;gap:4mm;width:60mm;box-shadow:0 4px 14px rgba(0,0,0,.06);}
+        .pd-client-card img{max-width:100%;max-height:26mm;object-fit:contain;}
+        .pd-client-card span{font-size:10.5pt;font-weight:700;text-align:center;color:#1a1a18;}
         .pd-cover-frame{width:100%;padding:14mm 18mm;display:flex;flex-direction:column;justify-content:space-between;border:3px solid #f1f0ec;margin:6mm;box-sizing:border-box;}
         .pd-cover-top{display:flex;justify-content:space-between;font-size:11pt;font-weight:700;letter-spacing:2px;}
         .pd-cover-mid{text-align:center;}
@@ -697,7 +757,7 @@ function buildDeckHTML(){
         .pd-pill{display:inline-block;background:#02367B;color:#fff;border-radius:999px;padding:5mm 12mm;font-size:12pt;font-weight:700;letter-spacing:2px;margin-top:8mm;}
         .pd-prepared{margin-top:10mm;font-size:12pt;color:#b9b8b5;}
         .pd-cover-bottom{display:flex;justify-content:space-between;align-items:flex-end;font-size:10pt;}
-        .pd-cover-bottom img{width:22mm;border-radius:50%;}
+        .pd-cover-mascot{width:22mm;height:22mm;border-radius:50%;object-fit:cover;background:#2a2b2c;}
         .pd-close{width:100%;padding:16mm 20mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14mm;text-align:center;}
         .pd-close-line{width:70%;height:1px;background:rgba(241,240,236,.3);}
         .pd-close-mid .pd-big{font-size:52pt;}
@@ -709,43 +769,50 @@ function buildDeckHTML(){
         .pd-side-pair{flex-direction:row;}
         .pd-framed{flex:1;background:#02367B;border-radius:10px;padding:6mm 6mm 12mm;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,.15);}
         .pd-framed-tall{max-width:80mm;margin:0 auto;}
-        .pd-framed img{width:100%;height:60mm;object-fit:cover;border-radius:4px;display:block;background:#dfe3ea;}
-        .pd-framed-tall img{height:95mm;}
+        .pd-framed img,.pd-framed .pd-img-fallback{width:100%;height:60mm;object-fit:cover;border-radius:4px;display:block;background:#dfe3ea;}
+        .pd-framed-tall img,.pd-framed-tall .pd-img-fallback{height:95mm;}
+        .pd-img-fallback{display:flex;align-items:center;justify-content:center;background:#022a5f;}
+        .pd-fallback-mascot{width:40%;height:40%;object-fit:contain;border-radius:0;background:transparent;}
         .pd-framed-label{color:#fff;text-align:center;font-weight:800;letter-spacing:1.5px;font-size:11pt;margin-top:6mm;text-transform:uppercase;}
         /* polaroid row — Why Work With Us */
         .pd-polaroid-row{display:flex;gap:10mm;margin-top:4mm;}
         .pd-polaroid{background:#fff;border:1px solid #e2e0d8;border-radius:8px;padding:5mm 5mm 0;box-shadow:0 6px 18px rgba(0,0,0,.08);width:70mm;}
-        .pd-polaroid-photo{width:100%;height:55mm;background:#ddd;border-radius:4px;overflow:hidden;margin-bottom:5mm;}
-        .pd-polaroid-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+        .pd-polaroid-photo{width:100%;height:55mm;border-radius:4px;overflow:hidden;margin-bottom:5mm;}
+        .pd-polaroid-photo img,.pd-polaroid-photo .pd-img-fallback{width:100%;height:100%;object-fit:cover;display:block;}
         .pd-polaroid-tag{display:block;color:#fff;font-weight:700;font-size:10.5pt;text-align:center;border-radius:6px 6px 0 0;margin:0 -5mm;padding:4mm 4mm 8mm;line-height:1.3;}
         @media print{@page{size:A4 landscape;margin:0;}}
     </style></head><body>${cover}${about_page}${what_page}${portfolio_page}${why_page}${clients_page}${close_page}</body></html>`;
 }
 
-function refreshDeckPreview(){
-    const frame = $('deckFrame');
-    const doc = frame.contentDocument || frame.contentWindow.document;
-    doc.open(); doc.write(buildDeckHTML()); doc.close();
+/* every asset path the deck could possibly need, so we can preload once
+   and then build/print synchronously from the resolved map */
+function allDeckImagePaths(){
+    const portfolio = selectedPortfolio();
+    const clientLogos = parsedClients().map(c=>c.logo).filter(Boolean);
+    return [...portfolio, ...clientLogos, FALLBACK_IMG];
+}
+
+let deckBuilding = false;
+async function refreshDeckPreview(){
+    if(deckBuilding) return;   // avoid overlapping builds while images are still resolving
+    deckBuilding = true;
+    try{
+        const imgMap = await resolveImages(allDeckImagePaths());
+        const frame = $('deckFrame');
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        doc.open(); doc.write(buildDeckHTML(imgMap)); doc.close();
+    } finally { deckBuilding = false; }
 }
 $('deckRefreshBtn').onclick = refreshDeckPreview;
 document.querySelector('#tabDeck .panel').addEventListener('input', refreshDeckPreview);
 document.querySelector('#tabDeck .panel').addEventListener('change', refreshDeckPreview);
-$('deckPrintBtn').onclick = () => {
-    refreshDeckPreview();
+$('deckPrintBtn').onclick = async () => {
+    const btn = $('deckPrintBtn'), orig = btn.textContent;
+    btn.textContent = 'Preparing images…'; btn.disabled = true;
+    await refreshDeckPreview();
+    btn.textContent = orig; btn.disabled = false;
     const frame = $('deckFrame');
-    const waitForImages = () => {
-        const doc = frame.contentDocument || frame.contentWindow.document;
-        const imgs = Array.from(doc.images || []);
-        if(!imgs.length) return Promise.resolve();
-        return Promise.all(imgs.map(img => (img.complete) ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })));
-    };
-    // give the iframe a beat to parse the doc before we look for <img> tags in it
-    setTimeout(()=>{
-        waitForImages().then(()=>{
-            frame.contentWindow.focus();
-            frame.contentWindow.print();
-        });
-    }, 200);
+    setTimeout(()=>{ frame.contentWindow.focus(); frame.contentWindow.print(); }, 150);
 };
 
 /* ================================================================
@@ -807,17 +874,27 @@ refreshEmailPreview();
    INIT — cloud only (Firestore), same as database.html
    ================================================================ */
 function notConfigured(){
+    authResolved=true;
     $('authCheck').style.display='none';
     const badge=$('syncBadge'); badge.textContent='⚠ Not configured'; badge.className='badge local';
     document.querySelector('.table-card').insertAdjacentHTML('beforebegin',
         '<div style="background:#fff4f4;border:1px solid #f0c0c0;color:#a33;border-radius:14px;padding:14px 18px;margin-bottom:14px;font-size:14px;">Leads are cloud-only so they sync to your phone \u2014 add your Firebase keys to <code>firebase-config.js</code> to turn this on.</div>');
 }
 function showConnError(){
+    authResolved=true;
     $('authCheck').style.display='none';
     const badge=$('syncBadge'); badge.textContent='⚠ Offline'; badge.className='badge local';
     document.querySelector('.table-card').insertAdjacentHTML('beforebegin',
         '<div style="background:#fff4f4;border:1px solid #f0c0c0;color:#a33;border-radius:14px;padding:14px 18px;margin-bottom:14px;font-size:14px;">Couldn\u2019t reach the cloud database. Check your connection, then <a href="#" onclick="location.reload();return false;" style="color:var(--accent);font-weight:700;">refresh</a>.</div>');
 }
+let authResolved = false;
+setTimeout(()=>{
+    if(!authResolved){
+        $('authCheck').style.display='none';
+        $('loginGate').style.display='flex';
+        $('lgErr').textContent = 'Taking longer than expected — check your connection and try logging in, or refresh the page.';
+    }
+}, 8000);
 function initCloud(){
     firebase.initializeApp(firebaseConfig);
     const auth=firebase.auth();
@@ -832,6 +909,7 @@ function initCloud(){
     $('lgBtn').onclick=login;
     $('lgPass').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
     auth.onAuthStateChanged(u=>{
+        authResolved=true;
         $('authCheck').style.display='none';
         if(u){ $('loginGate').style.display='none'; store.start(); }
         else { leads=[]; safeRenderLeads(); $('loginGate').style.display='flex'; }
